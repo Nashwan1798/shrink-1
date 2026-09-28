@@ -169,9 +169,9 @@ const SYSTEM = `You check submissions to SHRINK, a Hack Club program where teena
 
 You get the app itself (the decoded data URI), the repo's README, its file list, and a few of its files. Judge two things:
 
-readme — does the README tell a stranger what this app is and how it works or was made?
-- explains: it describes this project in the author's own words, even briefly.
-- thin: it's about this project but says almost nothing (a title, one line, a default template).
+readme — does the README describe what this app is? The bar is low: no setup guide or write-up needed, just a real description.
+- explains: a few sentences in the author's own words saying what the app is or does.
+- thin: it's about this project but too short to tell a stranger anything (a title, one line, a default template).
 - unrelated: it's about something else, filler, spam, or generated boilerplate that could describe any project.
 
 code — is the app's readable source in the repo?
