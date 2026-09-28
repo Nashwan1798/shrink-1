@@ -132,6 +132,11 @@ export async function orderFor(userId: string, id: string): Promise<Order | null
   return row ?? null;
 }
 
+export async function hasOrders(userId: string): Promise<boolean> {
+  const [row] = await db.select({ id: orders.id }).from(orders).where(eq(orders.userId, userId)).limit(1);
+  return Boolean(row);
+}
+
 export async function ordersOf(userId: string) {
   return db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt));
 }

@@ -8,18 +8,20 @@ import NavLinks from "./NavLinks";
 export default function Shell({
   user,
   bites,
+  hasOrders,
   children,
 }: {
   user: User;
   bites: number;
+  hasOrders: boolean;
   children: React.ReactNode;
 }) {
   const links = [
     { href: "/app", label: "home" },
     { href: "/app/ship", label: "ship" },
     { href: "/app/shop", label: "shop" },
-    { href: "/app/orders", label: "orders" },
   ];
+  if (hasOrders) links.push({ href: "/app/orders", label: "orders" });
   if (user.role === "reviewer" || user.role === "admin") links.push({ href: "/review", label: "review" });
   if (user.role === "admin") links.push({ href: "/admin", label: "admin" });
 
