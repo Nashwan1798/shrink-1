@@ -271,7 +271,7 @@ export default function ShipForm({
                 .
               </Notice>
             ) : hackatime.length === 0 ? (
-              <Notice>Nothing on Hackatime since the program started. Code with the editor plugin on, then come back.</Notice>
+              <Notice>Nothing on Hackatime yet. Code with the editor plugin on, then come back.</Notice>
             ) : (
               <ProjectPicker projects={hackatime} selected={selected} onToggle={(name) => toggle(selected, setSelected, name)} />
             )}

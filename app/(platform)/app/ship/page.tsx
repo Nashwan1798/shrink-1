@@ -10,7 +10,7 @@ export default async function ShipPage({ searchParams }: { searchParams: Promise
   const { from, project } = await searchParams;
 
   const [projects, used, previous] = await Promise.all([
-    fetchProjects(user.id).catch(() => null),
+    fetchProjects(user.id, { includeOlder: true }).catch(() => null),
     projectsInUse(user.id),
     from ? shipById(from) : Promise.resolve(null),
   ]);

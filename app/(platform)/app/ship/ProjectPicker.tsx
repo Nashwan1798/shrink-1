@@ -182,7 +182,11 @@ export default function ProjectPicker({
                     <span className="block truncate font-mono text-sm">
                       <Highlight text={p.name} q={q} />
                     </span>
-                    {locked && <span className="block text-xs font-medium text-black/60">on another ship</span>}
+                    {locked ? (
+                      <span className="block text-xs font-medium text-black/60">on another ship</span>
+                    ) : (
+                      p.seconds === 0 && <span className="block text-xs font-medium text-black/50">no time since the program started</span>
+                    )}
                   </span>
                   <span className="w-[4.5rem] shrink-0 text-right font-mono text-sm tabular-nums">{hm(p.seconds)}</span>
                 </li>
