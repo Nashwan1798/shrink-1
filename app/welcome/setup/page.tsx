@@ -35,12 +35,12 @@ export default async function Setup({ searchParams }: { searchParams: Promise<{ 
 
   return (
     <>
-      <h1 className="text-[length:var(--text-display)] font-semibold leading-[1.1] tracking-tight">let&apos;s get you set up</h1>
+      <h1 className="text-[length:var(--text-display)] font-semibold leading-[1.1] tracking-tight">before you start</h1>
 
       <div className="mt-8 flex flex-col gap-5">
         <Panel title="hackatime" badge={linked ? "linked" : "required"} done={linked}>
           <p className="font-medium leading-snug text-black/70">
-            Hackatime tracks your coding time from a plugin in your editor. Link your account so your hours count toward SHRINK.
+            Link your Hackatime account so your hours count.
           </p>
           {linkError && (
             <div className="mt-3">
@@ -48,15 +48,13 @@ export default async function Setup({ searchParams }: { searchParams: Promise<{ 
             </div>
           )}
           <div className="mt-4 flex flex-wrap items-center gap-4">
-            {linked ? (
-              <span className="font-semibold">linked. your hours will show up as you code.</span>
-            ) : (
+            {!linked && (
               <a href={`/api/auth/hackatime/start?next=${encodeURIComponent(`/welcome/setup${qs}`)}`} className={`${pixelButtonClass.replace(pixelButtonVariants.light, pixelButtonVariants.dark)} text-[1rem]`}>
                 link hackatime
               </a>
             )}
             <a href="https://hackatime.hackclub.com" target="_blank" rel="noreferrer" className={external}>
-              {linked ? "open Hackatime ↗" : "new to Hackatime? set it up ↗"}
+              {linked ? "open Hackatime ↗" : "don't have it yet? ↗"}
             </a>
           </div>
         </Panel>
@@ -64,12 +62,12 @@ export default async function Setup({ searchParams }: { searchParams: Promise<{ 
         <Panel title="identity" badge={verified ? "verified" : "needed to ship"} done={verified}>
           <p className="font-medium leading-snug text-black/70">
             {verified
-              ? "Hack Club has verified you. Nothing to do."
+              ? "You're verified."
               : user.verificationStatus === "pending"
-                ? "Submitted. Hack Club is checking it; you can start building meanwhile."
+                ? "Hack Club is reviewing it. You can build in the meantime."
                 : user.eligibility === "blocked_over_18"
-                  ? "Hack Club has you as over 18, so prizes can't ship to you. You can still take part."
-                  : "Verify your identity on Hack Club before you ship. It takes a few minutes, and you can start building first."}
+                  ? "Your Hack Club account says you're over 18, so you can't get prizes. You can still build and ship."
+                  : "Needed before your first ship, not before you start building. Takes a few minutes."}
           </p>
           {(user.eligibility === "blocked_unverified" || user.eligibility === "undetermined") && user.verificationStatus !== "pending" && (
             <a href={HCA_VERIFY_URL} target="_blank" rel="noreferrer" className={`mt-3 inline-block ${external}`}>
@@ -81,23 +79,23 @@ export default async function Setup({ searchParams }: { searchParams: Promise<{ 
         <Panel title="address" badge={home ? "on file" : "needed to ship"} done={Boolean(home)}>
           {home ? (
             <>
-              <p className="font-medium leading-snug text-black/70">We use the default address on your Hack Club account:</p>
+              <p className="font-medium leading-snug text-black/70">Prizes go to the default address on your Hack Club account:</p>
               <p className="mt-2 font-mono text-sm">
                 {[home.city, home.region, home.country].filter(Boolean).join(", ")}
               </p>
               <a href={HCA_ADDRESSES_URL} target="_blank" rel="noreferrer" className={`mt-3 inline-block ${external}`}>
-                change it on Hack Club ↗
+                change it ↗
               </a>
             </>
           ) : (
             <>
               <p className="font-medium leading-snug text-black/70">
                 {addresses === null || addresses === "reconnect"
-                  ? "We couldn't read your Hack Club addresses right now. We'll check again when you ship."
-                  : "Add an address to your Hack Club account before you ship. We use your default one, so there's nothing to fill in here."}
+                  ? "Couldn't load your Hack Club addresses. We'll try again when you ship."
+                  : "Prizes go to the default address on your Hack Club account. Add one there before your first ship."}
               </p>
               <a href={HCA_ADDRESSES_URL} target="_blank" rel="noreferrer" className={`mt-3 inline-block ${external}`}>
-                add one on Hack Club ↗
+                add an address ↗
               </a>
             </>
           )}

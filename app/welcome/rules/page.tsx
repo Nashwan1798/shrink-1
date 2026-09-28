@@ -9,11 +9,11 @@ import Panel from "../Panel";
 import Finish from "./Finish";
 
 const RULES = [
-  { t: "one line, under 3kb", d: `the whole app is a single data:text/html line, ${MAX_URI_BYTES.toLocaleString()} bytes at most.` },
-  { t: "nothing from the internet", d: "no CDNs, images, fonts or APIs. everything lives inside the line; outside requests are blocked when it runs." },
-  { t: "a public repo with a README", d: "on GitHub, GitLab or Codeberg. the README says what the app is and how you made it." },
-  { t: "the readable source", d: "the repo holds the code you shrank, not just the minified line." },
-  { t: "real hours", d: "tracked on Hackatime, at least 30 minutes a ship. each Hackatime project counts toward one ship." },
+  { t: `one line, ${MAX_URI_BYTES.toLocaleString()} bytes max`, d: "the whole app is a single data:text/html URI." },
+  { t: "self-contained", d: "no CDNs, images, fonts or APIs. network requests are blocked when it runs." },
+  { t: "a public repo", d: "on GitHub, GitLab or Codeberg, with a README on what it is and how you built it." },
+  { t: "readable source", d: "commit the code from before you shrank it, not just the minified line." },
+  { t: "tracked hours", d: "at least 30 minutes on Hackatime per ship. a Hackatime project can only count toward one ship." },
 ];
 
 export default async function Rules({ searchParams }: { searchParams: Promise<{ preview?: string }> }) {
@@ -26,11 +26,11 @@ export default async function Rules({ searchParams }: { searchParams: Promise<{ 
     <>
       <h1 className="text-[length:var(--text-display)] font-semibold leading-[1.1] tracking-tight">what every ship needs</h1>
       <p className="mt-3 max-w-[52ch] text-[length:var(--text-lead)] font-medium leading-snug text-black/70">
-        each ship is scanned for these before a reviewer sees it. build with them in mind from the start.
+        we check these before a reviewer sees your ship.
       </p>
 
       <div className="mt-8">
-        <Panel title="the rules">
+        <Panel title="checklist">
           <ol className="flex flex-col gap-4">
             {RULES.map((r, i) => (
               <li key={r.t} className="flex gap-3">

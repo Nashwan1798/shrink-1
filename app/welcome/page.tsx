@@ -8,10 +8,10 @@ import Panel from "./Panel";
 const day = (d: string) => new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 const HOW = [
-  { t: "build", d: `a whole web app as one data:text/html line, ${MAX_URI_BYTES.toLocaleString()} bytes at most. games, synths, toys, anything.` },
-  { t: "track", d: "Hackatime counts your coding hours from a plugin in your editor." },
-  { t: "ship", d: "paste the line in, link the repo, and a reviewer plays it." },
-  { t: "spend", d: "approved hours become BITES. spend them on prizes in the shop." },
+  { t: "build", d: `any web app, written as one data:text/html line of ${MAX_URI_BYTES.toLocaleString()} bytes or less.` },
+  { t: "track", d: "Hackatime logs your hours from your editor." },
+  { t: "ship", d: "submit the line and your repo. a reviewer tries it out." },
+  { t: "spend", d: "approved hours turn into BITES for the shop." },
 ];
 
 export default async function Welcome({ searchParams }: { searchParams: Promise<{ preview?: string }> }) {
@@ -25,7 +25,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
         welcome to <span className="wordmark">SHRINK</span>
       </h1>
       <p className="mt-3 max-w-[52ch] text-[length:var(--text-lead)] font-medium leading-snug text-black/70">
-        fit a web app into one line under 3kb. every hour you put in earns a BITE. runs {day(PROGRAM_START)} to {day(PROGRAM_END)}.
+        fit a web app into one line. {day(PROGRAM_START)} to {day(PROGRAM_END)}.
       </p>
 
       <div className="mt-8">

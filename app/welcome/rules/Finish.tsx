@@ -12,7 +12,7 @@ export default function Finish({ back }: { back: React.ReactNode }) {
     <form action={finishOnboarding} className="mt-6">
       <label className="check">
         <input type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} />
-        <span className="font-medium">got it. i&apos;ll build with these in mind.</span>
+        <span className="font-medium">i&apos;ve read these.</span>
       </label>
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
         {back}
