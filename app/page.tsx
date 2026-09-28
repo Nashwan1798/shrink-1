@@ -86,12 +86,9 @@ export default function Home() {
           </p>
 
           <div className="fade-in-late mt-[clamp(1.25rem,4vh,56px)] flex flex-wrap items-center justify-center gap-4">
-            <PixelLink href="/login?next=/app/ship" className="text-[clamp(1rem,1.3vw,1.4rem)]">
-              ship yours →
+            <PixelLink href="/login?next=/app" variant="dark" className="text-[clamp(1rem,1.3vw,1.4rem)]">
+              Start Now!
             </PixelLink>
-            <a href="#how" className="font-mono text-[clamp(0.85rem,1vw,1.1rem)] text-black/60 underline decoration-1 underline-offset-[0.25em] hover:text-black">
-              how does it work?
-            </a>
           </div>
 
           <a
@@ -234,8 +231,8 @@ export default function Home() {
           ))}
         </div>
         <div className="mt-[clamp(2rem,4vw,72px)] flex flex-wrap items-center gap-4">
-          <PixelLink href="/login?next=/app/ship" className="text-[clamp(1rem,1.3vw,1.4rem)]">
-            ship yours →
+          <PixelLink href="/login?next=/app" variant="dark" className="text-[clamp(1rem,1.3vw,1.4rem)]">
+            Start Now!
           </PixelLink>
           <p className="max-w-[40ch] text-[clamp(0.85rem,1vw,1.1rem)] font-medium text-black/60">
             Sign in with Hack Club, paste your data URI, pick the Hackatime project. Two minutes.
