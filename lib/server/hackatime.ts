@@ -2,6 +2,7 @@ import "server-only";
 
 import { and, eq, ne } from "drizzle-orm";
 
+import { queueSync } from "./airtable";
 import { decrypt, encrypt } from "./crypto";
 import { db } from "./db/client";
 import { ships, users } from "./db/schema";
@@ -113,6 +114,7 @@ export async function linkHackatime(userId: string, accountId: string, token: st
     if ((e as { code?: string }).code === "23505") return { ok: false, reason: "already_linked" };
     throw e;
   }
+  queueSync({ users: [userId] });
   return { ok: true };
 }
 

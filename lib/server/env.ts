@@ -35,7 +35,13 @@ export const env = {
 
   AIRTABLE_API_KEY: process.env.AIRTABLE_API_KEY ?? "",
   AIRTABLE_BASE_ID: process.env.AIRTABLE_BASE_ID ?? "",
-  AIRTABLE_TABLE: process.env.AIRTABLE_TABLE ?? "",
+  AIRTABLE_USERS_TABLE: process.env.AIRTABLE_USERS_TABLE ?? "Users",
+  AIRTABLE_SHIPS_TABLE: process.env.AIRTABLE_SHIPS_TABLE ?? "Ships",
+  AIRTABLE_ORDERS_TABLE: process.env.AIRTABLE_ORDERS_TABLE ?? "Orders",
+  AIRTABLE_YSWS_TABLE: process.env.AIRTABLE_YSWS_TABLE ?? "YSWS Project Submission",
+  CRON_SECRET: process.env.CRON_SECRET ?? "",
+  // Public origin for links written to Airtable from the cron job.
+  APP_URL: (process.env.APP_URL ?? "").replace(/\/$/, ""),
 
   ADMIN_EMAILS: (process.env.ADMIN_EMAILS ?? "")
     .split(",")

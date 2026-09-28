@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 
+import { queueSync } from "@/lib/server/airtable";
 import { actionUser } from "@/lib/server/auth/current";
 import { loadOrderAndUser, orderPlaced } from "@/lib/server/effects";
 import { OrderError, placeOrder } from "@/lib/server/orders";
@@ -28,6 +29,7 @@ export async function orderAction(_prev: OrderFormState, form: FormData): Promis
     const row = await loadOrderAndUser(id);
     if (row) await orderPlaced(row.order, row.user, origin);
   });
+  queueSync({ orders: [id] });
   revalidatePath("/", "layout");
   redirect(`/app/orders/${id}?placed=1`);
 }

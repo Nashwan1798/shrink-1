@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/server/auth/current";
 import { db } from "@/lib/server/db/client";
 import { ledgerEntries, orders, ships, users } from "@/lib/server/db/schema";
 
+import AirtableSync from "./AirtableSync";
 import People from "./People";
 
 export default async function AdminPage() {
@@ -51,6 +52,7 @@ export default async function AdminPage() {
           <Link href="/admin/orders" className="rounded-[4px] px-2 py-1 text-black/60 hover:bg-black/5">
             orders {openOrders.n > 0 && <span className="font-pixel">({openOrders.n})</span>}
           </Link>
+          <AirtableSync />
         </nav>
       </div>
       <People people={people.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() }))} selfId={admin.id} />

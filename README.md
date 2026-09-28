@@ -42,5 +42,10 @@ builds never enable staging.
    `HACKATIME_CLIENT_ID` / `HACKATIME_CLIENT_SECRET`.
 5. Optionally set Slack, Airtable, `GITHUB_TOKEN` and `OPENROUTER_API_KEY`
    (see `.env.example`).
+6. For Airtable, set `AIRTABLE_API_KEY`, `AIRTABLE_BASE_ID`, `APP_URL` and
+   `CRON_SECRET`. `vercel.json` runs `GET /api/cron/airtable` hourly; Vercel
+   sends `Authorization: Bearer $CRON_SECRET` itself. Users, Ships and Orders are
+   mirrored on every change and on each run; approved ships are filed once to
+   YSWS Project Submission. Admins can also resync from `/admin`.
 
 The build runs migrations against `DATABASE_URL` before `next build`.

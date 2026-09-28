@@ -57,7 +57,6 @@ export async function shipDecided(ship: Ship, author: User, origin: string) {
           ship.publicMessage ? `> ${esc(ship.publicMessage)}\n` : ""
         }spend them at ${origin}/app/shop`,
       ),
-      fileToAirtable(ship, author),
     ]);
   } else if (ship.state === "rejected") {
     await Promise.all([
@@ -86,34 +85,6 @@ export async function orderHandled(order: Order, user: User) {
   await dm(user, text);
 }
 
-async function fileToAirtable(ship: Ship, author: User) {
-  if (!env.AIRTABLE_API_KEY || !env.AIRTABLE_BASE_ID || !env.AIRTABLE_TABLE) return;
-  const parts = author.displayName.trim().split(/\s+/);
-  const lastName = parts.length > 1 ? parts.pop() : "";
-  const fields: Record<string, unknown> = {
-    "Code URL": ship.sourceUrl ?? `data URI, ${ship.bytes} bytes`,
-    "Playable URL": ship.dataUri,
-    "First Name": parts.join(" "),
-    "Last Name": lastName,
-    Email: author.email,
-    Description: ship.description,
-    "Optional - Override Hours Spent": Math.ceil(((ship.awardedSeconds ?? 0) / 3600) * 10) / 10,
-    "Optional - Override Hours Spent Justification": ship.internalNote ?? "",
-  };
-  if (author.birthdate) fields.Birthday = author.birthdate;
-  for (const k of Object.keys(fields)) if (fields[k] === "" || fields[k] == null) delete fields[k];
-  try {
-    const res = await fetch(`https://api.airtable.com/v0/${env.AIRTABLE_BASE_ID}/${encodeURIComponent(env.AIRTABLE_TABLE)}`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${env.AIRTABLE_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({ records: [{ fields }] }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!res.ok) console.error(`[airtable] ${res.status} ${await res.text()}`);
-  } catch (e) {
-    console.error("[airtable] threw", e);
-  }
-}
 
 export async function loadShipAndAuthor(shipId: string) {
   const [row] = await db

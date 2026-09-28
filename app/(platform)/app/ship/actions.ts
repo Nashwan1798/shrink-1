@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 
+import { queueSync } from "@/lib/server/airtable";
 import { actionUser } from "@/lib/server/auth/current";
 import { loadShipAndAuthor, shipShipped } from "@/lib/server/effects";
 import { requestOrigin } from "@/lib/server/origin";
@@ -42,6 +43,7 @@ export async function shipAction(_prev: ShipFormState, form: FormData): Promise<
     const row = await loadShipAndAuthor(id);
     if (row) await shipShipped(row.ship, row.author, origin);
   });
+  queueSync({ ships: [id] });
   revalidatePath("/", "layout");
   redirect(`/app/ships/${id}?shipped=1`);
 }

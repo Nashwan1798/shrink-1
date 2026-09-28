@@ -2,6 +2,7 @@ import "server-only";
 
 import { eq } from "drizzle-orm";
 
+import { queueSync } from "./airtable";
 import { encrypt } from "./crypto";
 import { db } from "./db/client";
 import { users, type User } from "./db/schema";
@@ -40,6 +41,7 @@ export async function upsertFromSignIn(identity: Identity, tokens: Tokens): Prom
       })
       .where(eq(users.id, existing.id))
       .returning();
+    queueSync({ users: [row.id] });
     return row;
   }
 
@@ -52,6 +54,7 @@ export async function upsertFromSignIn(identity: Identity, tokens: Tokens): Prom
     .set({ hcaTokenEncrypted: encrypt(tokens.access_token, tokenBinding(created.id)) })
     .where(eq(users.id, created.id))
     .returning();
+  queueSync({ users: [row.id] });
   return row;
 }
 
@@ -64,5 +67,6 @@ export async function currentEligibility(user: User): Promise<User["eligibility"
   if (check === "unavailable") return user.eligibility;
   const eligibility = deriveEligibility(user.verificationStatus, check);
   await db.update(users).set({ eligibility, eligibilityAt: new Date() }).where(eq(users.id, user.id));
+  if (eligibility !== user.eligibility) queueSync({ users: [user.id] });
   return eligibility;
 }

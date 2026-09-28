@@ -3,6 +3,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
+import { queueSync } from "@/lib/server/airtable";
 import { actionUser } from "@/lib/server/auth/current";
 import { db } from "@/lib/server/db/client";
 import { users } from "@/lib/server/db/schema";
@@ -15,5 +16,6 @@ export async function finishOnboarding(): Promise<void> {
     .update(users)
     .set({ onboardedAt: new Date() })
     .where(and(eq(users.id, user.id), isNull(users.onboardedAt)));
+  queueSync({ users: [user.id] });
   redirect("/app");
 }

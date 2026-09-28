@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 
+import { queueSync } from "@/lib/server/airtable";
 import { actionRole } from "@/lib/server/auth/current";
 import { loadShipAndAuthor, shipDecided } from "@/lib/server/effects";
 import { requestOrigin } from "@/lib/server/origin";
@@ -43,6 +44,7 @@ export async function decideAction(_prev: DecisionState, form: FormData): Promis
     const row = await loadShipAndAuthor(shipId);
     if (row) await shipDecided(row.ship, row.author, origin);
   });
+  queueSync({ ships: [shipId] });
   revalidatePath("/", "layout");
   redirect(nextId ? `/review?s=${nextId}&decided=1` : "/review?decided=1");
 }
