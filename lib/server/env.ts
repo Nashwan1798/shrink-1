@@ -32,6 +32,8 @@ export const env = {
 
   SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN ?? "",
   SLACK_CHANNEL_ID: process.env.SLACK_CHANNEL_ID ?? "",
+  // DMs to participants (ship decisions, order updates) are off unless SLACK_DMS=1.
+  SLACK_DMS: process.env.SLACK_DMS === "1" || process.env.SLACK_DMS === "true",
 
   AIRTABLE_API_KEY: process.env.AIRTABLE_API_KEY ?? "",
   AIRTABLE_BASE_ID: process.env.AIRTABLE_BASE_ID ?? "",

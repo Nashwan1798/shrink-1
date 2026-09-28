@@ -34,7 +34,7 @@ async function channel(text: string) {
 }
 
 async function dm(user: Pick<User, "slackId">, text: string) {
-  if (!user.slackId) return;
+  if (!env.SLACK_DMS || !user.slackId) return;
   await slack("chat.postMessage", { channel: user.slackId, text, unfurl_links: false, unfurl_media: false });
 }
 
