@@ -75,7 +75,7 @@ export default function Home() {
         <AuthError />
 
         <div className="flex flex-col sm:min-h-[calc(100svh-clamp(40px,3.6vw,72px))] items-center justify-center px-[var(--gutter)] pt-24 pb-[clamp(1.5rem,4vh,76px)] text-center sm:pt-[clamp(1.5rem,4vh,76px)]">
-          <p className="fade-in text-[length:var(--text-tagline)] leading-normal">
+          <p className="fade-in text-balance text-[length:max(12px,min(var(--text-tagline),3.95vw))] leading-normal">
             storage is more expensive than ever, it&rsquo;s time to...
           </p>
 
