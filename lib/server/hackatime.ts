@@ -2,8 +2,6 @@ import "server-only";
 
 import { and, eq, ne } from "drizzle-orm";
 
-import { PROGRAM_START } from "@/lib/program";
-
 import { decrypt, encrypt } from "./crypto";
 import { db } from "./db/client";
 import { ships, users } from "./db/schema";
@@ -125,8 +123,8 @@ export async function linkStagingHackatime(userId: string): Promise<void> {
     .where(eq(users.id, userId));
 }
 
-export async function fetchProjects(userId: string, opts: { includeOlder?: boolean } = {}): Promise<HackatimeProject[] | null> {
-  if (staging()) return opts.includeOlder ? [...STAGING_PROJECTS, ...STAGING_OLDER_PROJECTS] : STAGING_PROJECTS;
+export async function fetchProjects(userId: string): Promise<HackatimeProject[] | null> {
+  if (staging()) return STAGING_PROJECTS;
 
   const [row] = await db
     .select({ token: users.hackatimeTokenEncrypted })
@@ -141,23 +139,7 @@ export async function fetchProjects(userId: string, opts: { includeOlder?: boole
     return null;
   }
 
-  const [recent, all] = await Promise.all([
-    listProjects(token, `${PROGRAM_START}T00:00:00Z`),
-    opts.includeOlder ? listProjects(token) : Promise.resolve([]),
-  ]);
-  if (recent === null || all === null) return null;
-
-  // Older projects are listed so they can be picked, but only time since the start counts.
-  const seen = new Set(recent.map((p) => p.name));
-  const older = all.filter((p) => !seen.has(p.name)).map((p) => ({ name: p.name, seconds: 0 }));
-  return [...recent.sort((a, b) => b.seconds - a.seconds), ...older.sort((a, b) => a.name.localeCompare(b.name))];
-}
-
-async function listProjects(token: string, startDate?: string): Promise<HackatimeProject[] | null> {
-  const url = new URL(`${env.HACKATIME_HOST}${PROJECTS_PATH}`);
-  if (startDate) url.searchParams.set("start_date", startDate);
-
-  const res = await fetch(url, {
+  const res = await fetch(`${env.HACKATIME_HOST}${PROJECTS_PATH}`, {
     headers: { authorization: `Bearer ${token}`, accept: "application/json" },
     cache: "no-store",
     signal: AbortSignal.timeout(10_000),
@@ -173,7 +155,8 @@ async function listProjects(token: string, startDate?: string): Promise<Hackatim
   }[];
   return list
     .filter((p) => typeof p.name === "string" && p.name.length > 0)
-    .map((p) => ({ name: p.name as string, seconds: Math.max(0, Math.round(Number(p.total_seconds) || 0)) }));
+    .map((p) => ({ name: p.name as string, seconds: Math.max(0, Math.round(Number(p.total_seconds) || 0)) }))
+    .sort((a, b) => b.seconds - a.seconds);
 }
 
 export async function fetchSeconds(userId: string, names: string[]): Promise<number | null> {
@@ -189,5 +172,3 @@ const STAGING_PROJECTS: HackatimeProject[] = [
   { name: "plasma", seconds: 55 * 60 },
   { name: "something-else", seconds: 9 * 3600 },
 ];
-
-const STAGING_OLDER_PROJECTS: HackatimeProject[] = [{ name: "last-summer-game", seconds: 0 }];
