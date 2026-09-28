@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { pkceChallenge } from "@/lib/server/auth/hca";
+import { finishAuth, rememberPopup } from "@/lib/server/auth/popup";
 import { currentUser } from "@/lib/server/auth/session";
 import { randomToken } from "@/lib/server/crypto";
 import { db } from "@/lib/server/db/client";
@@ -21,11 +22,11 @@ export async function GET(req: NextRequest) {
 
   if (staging()) {
     await linkStagingHackatime(user.id);
-    return NextResponse.redirect(new URL(next, origin));
+    return finishAuth(req, next);
   }
   if (!hackatimeConfigured()) {
     console.error("[hackatime] HACKATIME_CLIENT_ID / HACKATIME_CLIENT_SECRET are not set");
-    return NextResponse.redirect(new URL(`${next}${next.includes("?") ? "&" : "?"}hackatime_error=unconfigured`, origin));
+    return finishAuth(req, `${next}${next.includes("?") ? "&" : "?"}hackatime_error=unconfigured`);
   }
 
   const state = randomToken(32);
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest) {
     expiresAt: new Date(Date.now() + 10 * 60_000),
   });
 
+  await rememberPopup(req);
   (await cookies()).set(HACKATIME_STATE_COOKIE, state, {
     httpOnly: true,
     sameSite: "lax",

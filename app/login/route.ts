@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { STATE_COOKIE, authorizeUrl, hcaConfigured } from "@/lib/server/auth/hca";
+import { finishAuth, rememberPopup } from "@/lib/server/auth/popup";
 import { createSession, currentUser } from "@/lib/server/auth/session";
 import { randomToken } from "@/lib/server/crypto";
 import { db } from "@/lib/server/db/client";
@@ -14,16 +15,16 @@ import { stagingUser } from "@/lib/server/staging";
 export async function GET(req: NextRequest) {
   const next = safePath(req.nextUrl.searchParams.get("next"), "/app");
 
-  if (await currentUser()) return NextResponse.redirect(new URL(next, req.nextUrl.origin));
+  if (await currentUser()) return finishAuth(req, next);
 
   if (staging()) {
     const user = await stagingUser();
     await createSession(user.id);
-    return NextResponse.redirect(new URL(next, req.nextUrl.origin));
+    return finishAuth(req, next);
   }
 
   if (!hcaConfigured()) {
-    return NextResponse.redirect(new URL("/?auth_error=unconfigured", req.nextUrl.origin));
+    return finishAuth(req, "/?auth_error=unconfigured");
   }
 
   const state = randomToken(32);
@@ -44,6 +45,8 @@ export async function GET(req: NextRequest) {
     path: "/",
     maxAge: 600,
   });
+
+  await rememberPopup(req);
 
   const url = await authorizeUrl({ origin: req.nextUrl.origin, state, codeVerifier });
   return NextResponse.redirect(url);

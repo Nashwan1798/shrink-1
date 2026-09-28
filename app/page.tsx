@@ -1,16 +1,16 @@
 import Image from "next/image";
-import Link from "next/link";
 import { Suspense } from "react";
 
 import AuthErrorInner from "./components/AuthError";
+import AuthPopupLink from "./components/AuthPopupLink";
 import BrowserMock from "./components/BrowserMock";
 import HackClubFlag from "./components/HackClubFlag";
+import { pixelButtonClass, pixelButtonVariants } from "./components/PixelButton";
 import ProjectCarousel from "./components/ProjectCarousel";
 import RewardPool from "./components/RewardPool";
 import ScrollMarquee from "./components/ScrollMarquee";
 import SkillBadge from "./components/SkillBadge";
 import Wordmark from "./components/Wordmark";
-import { PixelLink } from "./components/ui/bits";
 import { EXAMPLES } from "@/lib/examples";
 import { BADGES, BASE_CAP, REWARDS } from "@/lib/program";
 
@@ -21,6 +21,8 @@ const IDEAS: [string, string][] = [
   ["A morse code translator:", " type text and hear it beeped back at you!"],
   ["A tiny game:", " snake or pong? and use the Web Audio API!"],
 ];
+
+const darkPixel = pixelButtonClass.replace(pixelButtonVariants.light, pixelButtonVariants.dark);
 
 const CODE_LINE = "data:text/html,<body bgcolor=0 text=white>";
 
@@ -64,12 +66,12 @@ export default function Home() {
           <HackClubFlag className="block h-auto w-full" />
         </a>
         <div className="hazard hazard-top h-[clamp(40px,3.6vw,72px)] w-full" />
-        <Link
+        <AuthPopupLink
           href="/login?next=/app"
           className="absolute top-[calc(clamp(40px,3.6vw,72px)+clamp(12px,1.4vw,28px))] right-[clamp(12px,1.6vw,32px)] z-10 font-mono text-[clamp(0.8rem,0.95vw,1.05rem)] underline decoration-1 underline-offset-[0.25em] hover:decoration-2"
         >
           sign in →
-        </Link>
+        </AuthPopupLink>
         <AuthError />
 
         <div className="flex flex-col sm:min-h-[calc(100svh-clamp(40px,3.6vw,72px))] items-center justify-center px-[var(--gutter)] py-[clamp(1.5rem,4vh,76px)] text-center">
@@ -86,9 +88,9 @@ export default function Home() {
           </p>
 
           <div className="fade-in-late mt-[clamp(1.25rem,4vh,56px)] flex flex-wrap items-center justify-center gap-4">
-            <PixelLink href="/login?next=/app" variant="dark" className="text-[clamp(1rem,1.3vw,1.4rem)]">
+            <AuthPopupLink href="/login?next=/app" className={`${darkPixel} text-[clamp(1rem,1.3vw,1.4rem)]`}>
               Start Now!
-            </PixelLink>
+            </AuthPopupLink>
           </div>
 
           <a
@@ -231,9 +233,9 @@ export default function Home() {
           ))}
         </div>
         <div className="mt-[clamp(2rem,4vw,72px)] flex flex-wrap items-center gap-4">
-          <PixelLink href="/login?next=/app" variant="dark" className="text-[clamp(1rem,1.3vw,1.4rem)]">
+          <AuthPopupLink href="/login?next=/app" className={`${darkPixel} text-[clamp(1rem,1.3vw,1.4rem)]`}>
             Start Now!
-          </PixelLink>
+          </AuthPopupLink>
           <p className="max-w-[40ch] text-[clamp(0.85rem,1vw,1.1rem)] font-medium text-black/60">
             Sign in with Hack Club, paste your data URI, pick the Hackatime project. Two minutes.
           </p>

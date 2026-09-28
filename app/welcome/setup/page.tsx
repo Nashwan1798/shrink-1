@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import AuthPopupLink from "@/app/components/AuthPopupLink";
 import PixelButton, { pixelButtonClass, pixelButtonVariants } from "@/app/components/PixelButton";
 import { Notice, PixelLink } from "@/app/components/ui/bits";
 import { requireUser } from "@/lib/server/auth/current";
@@ -49,9 +50,9 @@ export default async function Setup({ searchParams }: { searchParams: Promise<{ 
           )}
           <div className="mt-4 flex flex-wrap items-center gap-4">
             {!linked && (
-              <a href={`/api/auth/hackatime/start?next=${encodeURIComponent(`/welcome/setup${qs}`)}`} className={`${pixelButtonClass.replace(pixelButtonVariants.light, pixelButtonVariants.dark)} text-[1rem]`}>
+              <AuthPopupLink href={`/api/auth/hackatime/start?next=${encodeURIComponent(`/welcome/setup${qs}`)}`} className={`${pixelButtonClass.replace(pixelButtonVariants.light, pixelButtonVariants.dark)} text-[1rem]`}>
                 link hackatime
-              </a>
+              </AuthPopupLink>
             )}
             <a href="https://hackatime.hackclub.com" target="_blank" rel="noreferrer" className={external}>
               {linked ? "open Hackatime ↗" : "don't have it yet? ↗"}

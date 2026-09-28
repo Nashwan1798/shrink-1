@@ -2,6 +2,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { finishAuth } from "@/lib/server/auth/popup";
 import { currentUser } from "@/lib/server/auth/session";
 import { safeEqual } from "@/lib/server/crypto";
 import { db } from "@/lib/server/db/client";
@@ -12,7 +13,7 @@ import { HACKATIME_STATE_COOKIE, exchangeHackatimeCode, fetchHackatimeAccountId,
 export async function GET(req: NextRequest) {
   const origin = req.nextUrl.origin;
   const back = (to: string, error?: string) =>
-    NextResponse.redirect(new URL(error ? `${to}${to.includes("?") ? "&" : "?"}hackatime_error=${error}` : to, origin));
+    finishAuth(req, error ? `${to}${to.includes("?") ? "&" : "?"}hackatime_error=${error}` : to);
 
   const params = req.nextUrl.searchParams;
   const code = params.get("code");
