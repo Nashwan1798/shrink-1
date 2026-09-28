@@ -28,7 +28,9 @@ export const users = pgTable(
   "users",
   {
     id: id(),
-    hcaSubject: text("hca_subject").notNull(),
+    // Null until the person signs in with Hack Club Auth; people who hit "join"
+    // in Slack get a row first, keyed by slackId.
+    hcaSubject: text("hca_subject"),
     email: text("email").notNull(),
     displayName: text("display_name").notNull(),
     avatarUrl: text("avatar_url"),

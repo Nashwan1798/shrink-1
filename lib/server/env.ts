@@ -40,6 +40,8 @@ export const env = {
   AIRTABLE_ORDERS_TABLE: process.env.AIRTABLE_ORDERS_TABLE ?? "Orders",
   AIRTABLE_YSWS_TABLE: process.env.AIRTABLE_YSWS_TABLE ?? "YSWS Project Submission",
   CRON_SECRET: process.env.CRON_SECRET ?? "",
+  // Shared secret for POST /api/slack/join (the Slack "join" button's webhook).
+  SLACK_JOIN_SECRET: process.env.SLACK_JOIN_SECRET ?? "",
   // Public origin for links written to Airtable from the cron job.
   APP_URL: (process.env.APP_URL ?? "").replace(/\/$/, ""),
 

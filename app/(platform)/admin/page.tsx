@@ -21,6 +21,7 @@ export default async function AdminPage() {
         slackId: users.slackId,
         role: users.role,
         eligibility: users.eligibility,
+        signedIn: sql<boolean>`${users.hcaSubject} is not null`,
         createdAt: users.createdAt,
         bites: sql<number>`coalesce((select sum(${ledgerEntries.amount}) from ${ledgerEntries} where ${ledgerEntries.userId} = ${users.id}), 0)::int`,
         shipCount: sql<number>`(select count(*) from ${ships} where ${ships.userId} = ${users.id})::int`,

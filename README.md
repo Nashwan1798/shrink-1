@@ -48,4 +48,11 @@ builds never enable staging.
    mirrored on every change and on each run; approved ships are filed once to
    YSWS Project Submission. Admins can also resync from `/admin`.
 
+7. For the Slack "join" button, set `SLACK_JOIN_SECRET` and point the webhook at
+   `POST https://<host>/api/slack/join` with `Authorization: Bearer <secret>`
+   (or `?secret=`) and the Slack ID as `slack_id`, in a JSON or form body or the
+   query string. It creates the user and mirrors them to Airtable; signing in
+   later claims that row, and they still go through `/welcome`. Give the bot
+   `users:read` and `users:read.email` so the row gets their Slack name and email.
+
 The build runs migrations against `DATABASE_URL` before `next build`.

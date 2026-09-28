@@ -1,0 +1,1 @@
+ALTER TABLE "users" ALTER COLUMN "hca_subject" DROP NOT NULL;

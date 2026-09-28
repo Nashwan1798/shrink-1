@@ -14,6 +14,7 @@ type Person = {
   slackId: string | null;
   role: "participant" | "reviewer" | "admin";
   eligibility: string;
+  signedIn: boolean;
   createdAt: string;
   bites: number;
   shipCount: number;
@@ -53,11 +54,14 @@ export default function People({ people, selfId }: { people: Person[]; selfId: s
                 <td className="px-3 py-2">
                   <span className="block font-semibold tracking-tight">{p.displayName}</span>
                   <span className="block font-mono text-xs text-black/50">
-                    {p.email}
-                    {p.slackId && ` · ${p.slackId}`}
+                    {[p.email, p.slackId].filter(Boolean).join(" · ")}
                   </span>
                 </td>
-                <td className={`px-3 py-2 font-mono text-xs ${p.eligibility === "eligible" ? "text-black/60" : "text-[#c1121f]"}`}>{p.eligibility.replace(/_/g, " ")}</td>
+                {p.signedIn ? (
+                  <td className={`px-3 py-2 font-mono text-xs ${p.eligibility === "eligible" ? "text-black/60" : "text-[#c1121f]"}`}>{p.eligibility.replace(/_/g, " ")}</td>
+                ) : (
+                  <td className="px-3 py-2 font-mono text-xs text-black/40">joined on slack, not signed in</td>
+                )}
                 <td className="px-3 py-2 text-right font-mono">{p.shipCount}</td>
                 <td className="px-3 py-2 text-right font-pixel">{p.bites}</td>
                 <td className="px-3 py-2">
