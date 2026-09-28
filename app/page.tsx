@@ -236,9 +236,6 @@ export default function Home() {
           <AuthPopupLink href="/login?next=/app" className={`${darkPixel} text-[clamp(1rem,1.3vw,1.4rem)]`}>
             Start Now!
           </AuthPopupLink>
-          <p className="max-w-[40ch] text-[clamp(0.85rem,1vw,1.1rem)] font-medium text-black/60">
-            Sign in with Hack Club, paste your data URI, pick the Hackatime project. Two minutes.
-          </p>
         </div>
       </section>
 
