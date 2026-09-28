@@ -5,9 +5,12 @@ import { z } from "zod";
 import { MIN_SHIP_SECONDS, REPO_URL, hm } from "@/lib/program";
 import { CHECK_LABELS, type Check, type CheckId, type CheckStatus } from "@/lib/scan";
 
+import { lt, sql } from "drizzle-orm";
+
 import { HCA_ADDRESSES_URL, HCA_VERIFY_URL } from "./auth/hca";
 import { sha256 } from "./crypto";
-import type { User } from "./db/schema";
+import { db } from "./db/client";
+import { scanCache, type User } from "./db/schema";
 import { env } from "./env";
 import { fetchSeconds } from "./hackatime";
 import { addressesFor } from "./orders";
@@ -22,7 +25,9 @@ const check = (id: CheckId, status: CheckStatus, detail?: string, fixUrl?: strin
   ...(fixUrl ? { fixUrl } : {}),
 });
 
-const TTL = 10 * 60_000;
+// In-process dedupe, mostly so the quick and deep scans of one click share a
+// single repo read. Anything worth keeping longer goes through `stored`.
+const TTL = 30_000;
 const cache = new Map<string, { at: number; value: Promise<unknown> }>();
 
 function remember<T>(key: string, make: () => Promise<T>): Promise<T> {
@@ -35,18 +40,43 @@ function remember<T>(key: string, make: () => Promise<T>): Promise<T> {
   return value;
 }
 
+// Postgres-backed, for values keyed by something immutable (a commit SHA), so
+// entries never go stale; old rows are only pruned to bound the table.
+const KEEP_MS = 30 * 24 * 60 * 60_000;
+
+async function stored<T>(key: string, make: () => Promise<T | null>): Promise<T | null> {
+  const [hit] = await db
+    .select({ value: scanCache.value })
+    .from(scanCache)
+    .where(sql`${scanCache.key} = ${key}`)
+    .catch(() => []);
+  if (hit) return hit.value as T;
+  const value = await make();
+  if (value !== null) {
+    await db
+      .insert(scanCache)
+      .values({ key, value })
+      .onConflictDoNothing()
+      .catch((e) => console.error("[scan] cache write failed", e));
+    if (Math.random() < 0.02) await db.delete(scanCache).where(lt(scanCache.createdAt, new Date(Date.now() - KEEP_MS))).catch(() => {});
+  }
+  return value;
+}
+
 type Source =
   | { kind: "missing"; why: string }
   | { kind: "elsewhere" }
-  | { kind: "github"; url: string; readme: string | null; files: { path: string; size: number }[]; excerpts: { path: string; text: string }[] };
+  | { kind: "github"; url: string; sha: string | null; readme: string | null; files: { path: string; size: number }[]; excerpts: { path: string; text: string }[] };
 
 const CODE_EXT = /\.(html?|m?js|jsx|ts|tsx|css|svg|glsl|frag|vert|py|sh)$/i;
 const SEGMENT = /^(?!\.{1,2}$)[\w.-]+$/;
 const SKIP_DIR = /(^|\/)(node_modules|dist|build|\.git|vendor)\//;
 
-async function gh(path: string, raw = false): Promise<Response> {
+const ACCEPT = { json: "application/vnd.github+json", raw: "application/vnd.github.raw+json", sha: "application/vnd.github.sha" };
+
+async function gh(path: string, as: keyof typeof ACCEPT = "json"): Promise<Response> {
   const headers: Record<string, string> = {
-    accept: raw ? "application/vnd.github.raw+json" : "application/vnd.github+json",
+    accept: ACCEPT[as],
     "user-agent": "shrink-pre-ship-scan",
     "x-github-api-version": "2022-11-28",
   };
@@ -67,15 +97,35 @@ function pickExcerpts(files: { path: string; size: number }[]): { path: string; 
 }
 
 async function readRepo(owner: string, repo: string): Promise<Source> {
+  // One cheap call for the head commit; an unchanged repo is then served from
+  // the snapshot we took last time instead of re-reading README, tree and files.
+  const head = await gh(`/repos/${owner}/${repo}/commits/HEAD`, "sha");
+  if (head.status === 404) return { kind: "missing", why: "GitHub says that repo doesn't exist, or it's private." };
+  // 409 means an empty repo: nothing to snapshot, read it live.
+  if (!head.ok && head.status !== 409) throw new Error(`GitHub ${head.status}`);
+  const sha = head.ok ? (await head.text()).trim() : null;
+  if (!sha) return readRepoAt(owner, repo, null);
+  let live: Source | null = null;
+  const src = await stored<Source>(`repo:${owner}/${repo}@${sha}`.toLowerCase(), async () => {
+    live = await readRepoAt(owner, repo, sha);
+    return live.kind === "github" ? live : null;
+  });
+  return src ?? live ?? readRepoAt(owner, repo, sha);
+}
+
+async function readRepoAt(owner: string, repo: string, sha: string | null): Promise<Source> {
   const res = await gh(`/repos/${owner}/${repo}`);
   if (res.status === 404) return { kind: "missing", why: "GitHub says that repo doesn't exist, or it's private." };
   if (!res.ok) throw new Error(`GitHub ${res.status}`);
   const meta = (await res.json()) as { html_url: string; default_branch: string; private: boolean };
   if (meta.private) return { kind: "missing", why: "The repo is private. Make it public so a reviewer can read it." };
 
+  // Pin every read to the same commit so the snapshot is consistent.
+  const ref = sha ?? meta.default_branch;
+  const at = `ref=${encodeURIComponent(ref)}`;
   const [readmeRes, treeRes] = await Promise.all([
-    gh(`/repos/${owner}/${repo}/readme`, true),
-    gh(`/repos/${owner}/${repo}/git/trees/${encodeURIComponent(meta.default_branch)}?recursive=1`),
+    gh(`/repos/${owner}/${repo}/readme?${at}`, "raw"),
+    gh(`/repos/${owner}/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`),
   ]);
   const readme = readmeRes.ok ? await readmeRes.text() : null;
   const tree = treeRes.ok ? ((await treeRes.json()) as { tree?: { path: string; type: string; size?: number }[] }).tree ?? [] : [];
@@ -83,23 +133,35 @@ async function readRepo(owner: string, repo: string): Promise<Source> {
 
   const excerpts = await Promise.all(
     pickExcerpts(files).map(async (f) => {
-      const r = await gh(`/repos/${owner}/${repo}/contents/${f.path.split("/").map(encodeURIComponent).join("/")}`, true);
+      const r = await gh(`/repos/${owner}/${repo}/contents/${f.path.split("/").map(encodeURIComponent).join("/")}?${at}`, "raw");
       return { path: f.path, text: r.ok ? await r.text() : "" };
     }),
   );
-  return { kind: "github", url: meta.html_url, readme, files, excerpts: excerpts.filter((e) => e.text) };
+  return { kind: "github", url: meta.html_url, sha, readme, files, excerpts: excerpts.filter((e) => e.text) };
+}
+
+function parseRepo(url: string): { host: string; owner: string; repo: string } | null {
+  if (!REPO_URL.test(url)) return null;
+  const u = new URL(url);
+  const [owner, repo] = u.pathname.split("/").filter(Boolean);
+  if (!owner || !repo || !SEGMENT.test(owner) || !SEGMENT.test(repo)) return null;
+  return { host: u.hostname.toLowerCase().replace(/^www\./, ""), owner, repo: repo.replace(/\.git$/, "") };
+}
+
+// Identifies a repo for the distinct-repos-per-day limit; null if the link
+// isn't a repo we'd fetch at all.
+export function repoKey(url: string): string | null {
+  const r = parseRepo(url.trim());
+  return r && `${r.host}/${r.owner}/${r.repo}`.toLowerCase();
 }
 
 function readSource(url: string): Promise<Source> {
   return remember(`src:${url}`, async () => {
     if (!REPO_URL.test(url)) return { kind: "missing", why: "The source link has to be a GitHub, GitLab or Codeberg repo." };
-    const u = new URL(url);
-    const [owner, repo] = u.pathname.split("/").filter(Boolean);
-    if (!owner || !repo || !SEGMENT.test(owner) || !SEGMENT.test(repo)) {
-      return { kind: "missing", why: "Link the repo itself, like github.com/you/project." };
-    }
-    const host = u.hostname.toLowerCase().replace(/^www\./, "");
-    if (host === "github.com") return readRepo(owner, repo.replace(/\.git$/, ""));
+    const parsed = parseRepo(url);
+    if (!parsed) return { kind: "missing", why: "Link the repo itself, like github.com/you/project." };
+    const { host, owner, repo } = parsed;
+    if (host === "github.com") return readRepo(owner, repo);
 
     const res = await fetch(`https://${host}/${owner}/${repo}`, { redirect: "follow", cache: "no-store", signal: AbortSignal.timeout(8_000) }).catch(
       () => null,
@@ -302,9 +364,11 @@ export async function deepScan(input: ScanInput): Promise<Check[]> {
   const hasCode = src.files.some((f) => CODE_EXT.test(f.path));
   const app = decodeDataUri(input.dataUri);
 
-  const verdict = await remember(`judge:${sha256(`${src.url}\n${src.readme}\n${src.files.map((f) => f.path).join()}\n${app}`)}`, () =>
-    judge(app, src),
-  ).catch((e) => {
+  // Same commit, same app, same model and prompt: same verdict. Without a SHA
+  // (empty repo) fall back to hashing what the judge actually sees.
+  const seen = src.sha ?? `${src.readme}\n${JSON.stringify(src.files)}\n${JSON.stringify(src.excerpts)}`;
+  const key = `judge:${sha256(`${env.OPENROUTER_MODEL}\n${SYSTEM}\n${src.url}\n${seen}\n${app}`)}`;
+  const verdict = await remember(key, () => stored(key, () => judge(app, src))).catch((e) => {
     console.error("[scan] judge failed", e);
     return null;
   });

@@ -20,7 +20,7 @@ export default function ScanPanel({
   const [quick, setQuick] = useState<Check[] | null>(null);
   const [deep, setDeep] = useState<Check[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const [retryIn, setRetryIn] = useState<number | null>(null);
+  const [limited, setLimited] = useState<string | null>(null);
   const [showPassed, setShowPassed] = useState(false);
   const run = useRef(0);
   const key = JSON.stringify(input);
@@ -30,13 +30,13 @@ export default function ScanPanel({
     setQuick(null);
     setDeep(null);
     setFailed(false);
-    setRetryIn(null);
+    setLimited(null);
     onBlocked(null);
     const stale = () => id !== run.current;
     const settle = (set: (c: Check[]) => void) => (r: ScanResult) => {
       if (stale()) return;
       if ("checks" in r) set(r.checks);
-      else setRetryIn(r.retryInMinutes);
+      else setLimited(r.limited);
     };
     quickScanAction(input, fresh)
       .then(settle(setQuick))
@@ -61,16 +61,16 @@ export default function ScanPanel({
   const passes = all.filter((c) => c.status === "pass");
 
   useEffect(() => {
-    if (failed || retryIn !== null) onBlocked(true);
+    if (failed || limited !== null) onBlocked(true);
     else if (done) onBlocked(fails.length > 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [done, failed, retryIn, fails.length]);
+  }, [done, failed, limited, fails.length]);
 
   const byId = new Map(all.map((c) => [c.id, c]));
   const order: CheckId[] = [...QUICK_CHECKS, ...DEEP_CHECKS];
 
   const summary =
-    retryIn !== null
+    limited !== null
       ? "slow down a bit"
       : failed
         ? "the scan broke on our side"
@@ -86,7 +86,7 @@ export default function ScanPanel({
     <div className="overflow-hidden rounded-[12px] border-2 border-black bg-white">
       <div className="flex items-center justify-between gap-3 border-b-2 border-black bg-ink px-4 py-2.5 text-white">
         <span className="font-pixel text-[1.1rem] leading-none">pre-ship scan</span>
-        {(done || failed || retryIn !== null) && (
+        {(done || failed || limited !== null) && (
           <button type="button" onClick={() => start(true)} className="text-xs font-semibold text-white/70 underline underline-offset-2 hover:text-accent">
             scan again
           </button>
@@ -98,16 +98,16 @@ export default function ScanPanel({
       </p>
 
       <ul className="px-2 pb-2 pt-1">
-        {retryIn !== null && (
+        {limited !== null && (
           <li className="px-2 py-2 text-sm font-medium text-black/60">
-            That&apos;s a lot of scans. Try again in {retryIn} min.
+            {limited}
           </li>
         )}
         {failed && (
           <li className="px-2 py-2 text-sm font-medium text-black/60">Something went wrong running the checks. Try scanning again in a minute.</li>
         )}
 
-        {retryIn !== null ? null : !done && !failed
+        {limited !== null ? null : !done && !failed
           ? order.map((id) => <Row key={id} id={id} check={byId.get(id)} />)
           : done && (
               <>

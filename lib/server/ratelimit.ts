@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, asc, eq, gte, like, lt, sql } from "drizzle-orm";
 
 import { db } from "./db/client";
 import { rateHits } from "./db/schema";
@@ -20,6 +20,31 @@ export async function take(userId: string, bucket: string, max: number, windowMs
       .from(rateHits)
       .where(and(scope, gte(rateHits.createdAt, since)))
       .orderBy(asc(rateHits.createdAt));
+    if (recent.length >= max) {
+      const freesAt = recent[recent.length - max].at.getTime() + windowMs;
+      return { ok: false, retryInMinutes: Math.max(1, Math.ceil((freesAt - Date.now()) / 60_000)) };
+    }
+    await tx.insert(rateHits).values({ userId, bucket });
+    return { ok: true };
+  });
+}
+
+// Caps how many different `key`s a user can touch per window (e.g. repos
+// scanned per day). Repeat hits on a key already counted are free; a key frees
+// up `windowMs` after it was first counted.
+export async function takeDistinct(userId: string, prefix: string, key: string, max: number, windowMs: number): Promise<Limit> {
+  const since = new Date(Date.now() - windowMs);
+  const bucket = `${prefix}:${key}`;
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`${userId}:${prefix}:*`}))`);
+    const scope = and(eq(rateHits.userId, userId), like(rateHits.bucket, `${prefix}:%`));
+    await tx.delete(rateHits).where(and(scope, lt(rateHits.createdAt, since)));
+    const recent = await tx
+      .select({ bucket: rateHits.bucket, at: rateHits.createdAt })
+      .from(rateHits)
+      .where(and(scope, gte(rateHits.createdAt, since)))
+      .orderBy(asc(rateHits.createdAt));
+    if (recent.some((r) => r.bucket === bucket)) return { ok: true };
     if (recent.length >= max) {
       const freesAt = recent[recent.length - max].at.getTime() + windowMs;
       return { ok: false, retryInMinutes: Math.max(1, Math.ceil((freesAt - Date.now()) / 60_000)) };

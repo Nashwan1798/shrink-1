@@ -179,6 +179,14 @@ export const rateHits = pgTable(
   (t) => [index("rate_hits_user_bucket_idx").on(t.userId, t.bucket, t.createdAt)],
 );
 
+// Pre-ship scan results keyed by repo commit, so re-scans of an unchanged repo
+// skip GitHub and the LLM.
+export const scanCache = pgTable("scan_cache", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  createdAt: now("created_at"),
+});
+
 export type User = typeof users.$inferSelect;
 export type Ship = typeof ships.$inferSelect;
 export type Order = typeof orders.$inferSelect;

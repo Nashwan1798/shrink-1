@@ -9,8 +9,9 @@ import { actionUser } from "@/lib/server/auth/current";
 import { loadShipAndAuthor, shipShipped } from "@/lib/server/effects";
 import { requestOrigin } from "@/lib/server/origin";
 import type { Check } from "@/lib/scan";
-import { deepScan, forgetSource, quickScan, type ScanInput } from "@/lib/server/scan";
-import { take } from "@/lib/server/ratelimit";
+import { hm } from "@/lib/program";
+import { deepScan, forgetSource, quickScan, repoKey, type ScanInput } from "@/lib/server/scan";
+import { take, takeDistinct } from "@/lib/server/ratelimit";
 import { ShipError, createShip } from "@/lib/server/ships";
 
 export type ShipFormState = { error: string | null };
@@ -20,6 +21,8 @@ export async function shipAction(_prev: ShipFormState, form: FormData): Promise<
   const limit = await take(user.id, "ship", SCANS_PER_WINDOW, SCAN_WINDOW_MS);
   if (!limit.ok) return { error: `Too many attempts. Try again in ${limit.retryInMinutes} min.` };
   const str = (k: string) => (typeof form.get(k) === "string" ? (form.get(k) as string) : "");
+  const repos = await repoLimit(user.id, str("source_url"));
+  if (repos) return { error: repos };
   let id: string;
   try {
     const ship = await createShip(user, {
@@ -48,25 +51,44 @@ export async function shipAction(_prev: ShipFormState, form: FormData): Promise<
   redirect(`/app/ships/${id}?shipped=1`);
 }
 
-export type ScanResult = { checks: Check[] } | { retryInMinutes: number };
+export type ScanResult = { checks: Check[] } | { limited: string };
 
 const SCANS_PER_WINDOW = 30;
 const SCAN_WINDOW_MS = 30 * 60_000;
+// Scanning a repo costs GitHub calls and an LLM run; a real participant works
+// on a handful at most, so cap distinct repos rather than scans.
+const REPOS_PER_DAY = 10;
+const DAY_MS = 24 * 60 * 60_000;
+
+async function repoLimit(userId: string, sourceUrl: string): Promise<string | null> {
+  const key = repoKey(sourceUrl);
+  if (!key) return null;
+  const limit = await takeDistinct(userId, "scan:repo", key, REPOS_PER_DAY, DAY_MS);
+  return limit.ok
+    ? null
+    : `You've checked ${REPOS_PER_DAY} different repos today. Use one you've already checked, or try a new one in ${hm(limit.retryInMinutes * 60)}.`;
+}
+
+async function scanLimit(userId: string, kind: "quick" | "deep", sourceUrl: string): Promise<string | null> {
+  const limit = await take(userId, `scan:${kind}`, SCANS_PER_WINDOW, SCAN_WINDOW_MS);
+  if (!limit.ok) return `That's a lot of scans. Try again in ${hm(limit.retryInMinutes * 60)}.`;
+  return repoLimit(userId, sourceUrl);
+}
 
 export async function quickScanAction(input: ScanInput, fresh = false): Promise<ScanResult> {
   const user = await actionUser();
-  const limit = await take(user.id, "scan:quick", SCANS_PER_WINDOW, SCAN_WINDOW_MS);
-  if (!limit.ok) return { retryInMinutes: limit.retryInMinutes };
   const i = clean(input);
+  const limited = await scanLimit(user.id, "quick", i.sourceUrl);
+  if (limited) return { limited };
   if (fresh) forgetSource(i.sourceUrl);
   return { checks: await quickScan(user, i) };
 }
 
 export async function deepScanAction(input: ScanInput, fresh = false): Promise<ScanResult> {
   const user = await actionUser();
-  const limit = await take(user.id, "scan:deep", SCANS_PER_WINDOW, SCAN_WINDOW_MS);
-  if (!limit.ok) return { retryInMinutes: limit.retryInMinutes };
   const i = clean(input);
+  const limited = await scanLimit(user.id, "deep", i.sourceUrl);
+  if (limited) return { limited };
   if (fresh) forgetSource(i.sourceUrl);
   return { checks: await deepScan(i) };
 }
