@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SHRINK!
 
-## Getting Started
+Build a web app that fits in a 3 KB `data:` URI, get cool prizes!
 
-First, run the development server:
+## Running locally
 
-```bash
+Requires Node 20+ and PostgreSQL.
+
+```sh
+npm install
+cp .env.example .env.local   # set DATABASE_URL and ENCRYPTION_KEY
+createdb shrink
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+With `HCA_CLIENT_ID` unset, `next dev` runs in staging mode: `/login` signs
+you in as a local account (role from `STAGING_ROLE`, default `admin`),
+Hackatime returns fixed projects, and orders use a fake address. Production
+builds never enable staging.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script                | |
+| --------------------- | --- |
+| `npm run dev`         | dev server |
+| `npm run build`       | apply migrations, then `next build` |
+| `npm run db:generate` | generate a migration from `lib/server/db/schema.ts` |
+| `npm run db:migrate`  | apply migrations in `./drizzle` |
+| `npm run typecheck`   | `tsc --noEmit` |
 
-## Learn More
+## Deploying
 
-To learn more about Next.js, take a look at the following resources:
+1. Create a Postgres database and set `DATABASE_URL` to its pooled
+   connection string.
+2. Set `ENCRYPTION_KEY` (`openssl rand -hex 32`) and `ADMIN_EMAILS`.
+3. Register an app with [Hack Club Auth](https://auth.hackclub.com) using
+   redirect URI `https://<host>/api/auth/callback` and set
+   `HCA_CLIENT_ID` / `HCA_CLIENT_SECRET`.
+4. Register an OAuth app with Hackatime using redirect URI
+   `https://<host>/api/auth/hackatime/callback` and set
+   `HACKATIME_CLIENT_ID` / `HACKATIME_CLIENT_SECRET`.
+5. Optionally set Slack, Airtable, `GITHUB_TOKEN` and `OPENROUTER_API_KEY`
+   (see `.env.example`).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The build runs migrations against `DATABASE_URL` before `next build`.
