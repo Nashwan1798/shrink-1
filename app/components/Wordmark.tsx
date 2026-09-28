@@ -158,29 +158,36 @@ export default function Wordmark({ className = "" }: { className?: string }) {
       }
     };
 
-    const onMove = (e: MouseEvent) => {
+    const track = (e: PointerEvent) => {
       const r = word.getBoundingClientRect();
       if (r.width === 0) return;
       cursor.current = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
       kick();
     };
-    const onLeave = () => {
+    // Mouse hovers the wave; touch and pen only squeeze while a finger is down,
+    // since they never send a leave to reset it.
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType === "mouse" || pressed.current) track(e);
+    };
+    const onLeave = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
       cursor.current = null;
       kick();
     };
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
       pressed.current = true;
-      onMove(e);
+      track(e);
     };
-    const onUp = () => {
+    const onUp = (e: PointerEvent) => {
       if (!pressed.current) return;
       pressed.current = false;
+      if (e.pointerType !== "mouse" || e.type === "pointercancel") cursor.current = null;
       kick();
     };
 
-    word.addEventListener("mousemove", onMove, { passive: true });
-    word.addEventListener("mouseleave", onLeave);
+    word.addEventListener("pointermove", onMove, { passive: true });
+    word.addEventListener("pointerleave", onLeave);
     word.addEventListener("pointerdown", onDown);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
@@ -190,8 +197,8 @@ export default function Wordmark({ className = "" }: { className?: string }) {
     });
 
     return () => {
-      word.removeEventListener("mousemove", onMove);
-      word.removeEventListener("mouseleave", onLeave);
+      word.removeEventListener("pointermove", onMove);
+      word.removeEventListener("pointerleave", onLeave);
       word.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
@@ -206,7 +213,7 @@ export default function Wordmark({ className = "" }: { className?: string }) {
     >
       <h1
         ref={wordRef}
-        className="relative h-full w-full cursor-default select-none"
+        className="relative h-full w-full cursor-default touch-pan-y select-none"
         style={{ opacity: loaded ? 1 : 0, transition: "opacity 0.5s ease-out" }}
       >
         <Plate side="left" visible={loaded} refEl={leftPlate} />

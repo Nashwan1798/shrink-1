@@ -74,7 +74,7 @@ export default function Home() {
         </AuthPopupLink>
         <AuthError />
 
-        <div className="flex flex-col sm:min-h-[calc(100svh-clamp(40px,3.6vw,72px))] items-center justify-center px-[var(--gutter)] py-[clamp(1.5rem,4vh,76px)] text-center">
+        <div className="flex flex-col sm:min-h-[calc(100svh-clamp(40px,3.6vw,72px))] items-center justify-center px-[var(--gutter)] pt-24 pb-[clamp(1.5rem,4vh,76px)] text-center sm:pt-[clamp(1.5rem,4vh,76px)]">
           <p className="fade-in text-[length:var(--text-tagline)] leading-normal">
             storage is more expensive than ever, it&rsquo;s time to...
           </p>
