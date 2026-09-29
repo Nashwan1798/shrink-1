@@ -86,7 +86,7 @@ export async function orderHandled(order: Order, user: User) {
 }
 
 
-// Needs channels:manage, and the bot has to be in the channel itself.
+// Needs channels:write.invites, and the bot has to be in the channel itself.
 export async function joinedProgram(user: Pick<User, "slackId">) {
   if (!env.SLACK_PROGRAM_CHANNEL_ID || !user.slackId) return;
   await slack("conversations.invite", { channel: env.SLACK_PROGRAM_CHANNEL_ID, users: user.slackId }, ["already_in_channel"]);

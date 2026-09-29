@@ -9,7 +9,7 @@
   },
   "oauth_config": {
     "scopes": {
-      "bot": ["channels:manage", "chat:write", "chat:write.public", "users:read", "users:read.email"]
+      "bot": ["channels:write.invites", "chat:write", "chat:write.public", "users:read", "users:read.email"]
     }
   },
   "settings": {
