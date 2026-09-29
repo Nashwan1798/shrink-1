@@ -72,7 +72,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         </header>
 
         <div className="pt-6">
-          <Body />
+          {guide.soon ? <p className="text-[length:var(--text-lead)] text-black/60">coming soon!</p> : <Body />}
         </div>
 
         <footer className="mt-12 grid grid-cols-2 gap-3 border-t-4 border-rule pt-4">

@@ -8,14 +8,11 @@ import { GUIDES } from "./guides";
 export default function GuidesPage() {
   return (
     <>
-      <H1 sub="from an empty folder to a shipped app. if you're new, read setting up before you write any code.">guides</H1>
+      <H1>guides</H1>
 
       {(["making it", "badges"] as const).map((group, gi) => (
         <section key={group} className={`${gi ? "mt-[clamp(1.5rem,3vw,48px)] " : ""}border-t-4 border-rule pt-4`}>
           <h2 className="text-[1.25rem] font-semibold tracking-tight">{group}</h2>
-          {group === "badges" && (
-            <p className="mt-1 text-sm font-medium text-black/60">each badge raises how many BITES a project can earn.</p>
-          )}
           <ol className="mt-2">
             {GUIDES.filter((g) => g.group === group).map((g) => {
               const n = GUIDES.indexOf(g) + 1;
@@ -37,6 +34,7 @@ export default function GuidesPage() {
                             +{badge.bites} cap
                           </span>
                         )}
+                        {g.soon && <span className="text-sm font-medium text-black/40">coming soon!</span>}
                       </span>
                       <span className="mt-0.5 block max-w-[62ch] text-[0.95rem] font-medium leading-snug text-black/60">
                         {g.blurb}
