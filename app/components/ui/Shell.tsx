@@ -19,6 +19,7 @@ export default function Shell({
   const links = [
     { href: "/app", label: "home" },
     { href: "/app/ship", label: "ship" },
+    { href: "/app/guides", label: "guides" },
     { href: "/app/shop", label: "shop" },
   ];
   if (hasOrders) links.push({ href: "/app/orders", label: "orders" });
