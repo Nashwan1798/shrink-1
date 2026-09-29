@@ -12,7 +12,7 @@ import {
 import { GAME_DATA_URI } from "@/app/components/game-data-uri";
 
 export const EXAMPLES: { title: string; size: string; uri: string; thumb: string }[] = [
-  { title: "Space fighter", size: "3kb", uri: GAME_DATA_URI, thumb: "/design/project-thumb.png" },
+  { title: "Space fighter", size: "2.7kb", uri: GAME_DATA_URI, thumb: "/design/project-thumb.png" },
   {
     title: "Flappy square",
     size: "1.4kb",
