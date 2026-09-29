@@ -50,7 +50,7 @@ export type Reward = {
 
 export const REWARDS: Reward[] = [
   { slug: "nfc-stickers", name: "NFC stickers", label: ["NFC Stickers"], desc: "A pack of programmable NFC stickers.", img: "nfc-stickers", w: 720, h: 445, cost: 2, size: 0.09, tilt: -4 },
-  { slug: "rubber-duck", name: "Debugger rubber duckie", label: ["debugger", "rubber duckie"], desc: "A rubber duck for rubber duck debugging.", img: "rubber-duck", w: 557, h: 557, cost: 2, size: 0.08, tilt: 3 },
+  { slug: "rubber-duck", name: "Debugger rubber duckie", label: ["debugger", "rubber duckie"], desc: "A rubber duck for rubber duck debugging.", img: "rubber-duck", w: 492, h: 557, cost: 2, size: 0.08, tilt: 3 },
   { slug: "floppy-disk", name: "Floppy disk", label: ["floppy disk"], desc: "A 3.5\" 1.44MB floppy disk.", img: "floppy-disk", w: 695, h: 720, cost: 2, size: 0.08, tilt: -2 },
   { slug: "sticker-pack", name: "Hack Club sticker pack", label: ["sticker pack"], desc: "A pack of Hack Club stickers.", img: "sticker-pack", w: 357, h: 247, cost: 2, size: 0.09, tilt: 5 },
   { slug: "magazine", name: "Hack Club magazine", label: ["the magazine"], desc: "The 2025 Hack Club magazine.", img: "magazine", w: 508, h: 720, cost: 2, size: 0.09, tilt: -3 },

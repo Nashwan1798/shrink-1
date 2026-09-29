@@ -20,6 +20,7 @@
 | balatro.png | Balatro logo, official press kit (playbalatro.com) | © LocalThunk / Playstack |
 | gift-card.png | Made for this site | Hack Club |
 | magazine.png | magazine.hackclub.com cover | Hack Club |
-| nfc-stickers, rubber-duck, xiao-esp32, pi-zero-2w, attiny3226 | Rewards comp (Figma) | Hack Club |
+| rubber-duck.png | Lilalu yellow rubber duck product photo (luckyduckshop.com) | © Lilalu, product image |
+| nfc-stickers, xiao-esp32, pi-zero-2w, attiny3226 | Rewards comp (Figma) | Hack Club |
 
 Backgrounds were removed and images downscaled for the site.
