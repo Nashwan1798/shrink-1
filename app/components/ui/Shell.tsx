@@ -2,29 +2,27 @@ import Link from "next/link";
 
 import type { User } from "@/lib/server/db/schema";
 
+import AuthPopupLink from "../AuthPopupLink";
 import { pixelButtonClass } from "../PixelButton";
 import NavLinks from "./NavLinks";
 
-export default function Shell({
-  user,
-  bites,
-  hasOrders,
-  children,
-}: {
-  user: User;
-  bites: number;
-  hasOrders: boolean;
-  children: React.ReactNode;
-}) {
-  const links = [
-    { href: "/app", label: "home" },
-    { href: "/app/ship", label: "ship" },
-    { href: "/app/guides", label: "guides" },
-    { href: "/app/shop", label: "shop" },
-  ];
+type Props =
+  | { user: User; bites: number; hasOrders: boolean; children: React.ReactNode }
+  | { user: null; bites?: never; hasOrders?: never; children: React.ReactNode };
+
+// user is null only on public pages (guides): nav shrinks to guides and the account bits become a sign-in link.
+export default function Shell({ user, bites, hasOrders, children }: Props) {
+  const links = user
+    ? [
+        { href: "/app", label: "home" },
+        { href: "/app/ship", label: "ship" },
+        { href: "/app/guides", label: "guides" },
+        { href: "/app/shop", label: "shop" },
+      ]
+    : [{ href: "/app/guides", label: "guides" }];
   if (hasOrders) links.push({ href: "/app/orders", label: "orders" });
-  if (user.role === "reviewer" || user.role === "admin") links.push({ href: "/review", label: "review" });
-  if (user.role === "admin") links.push({ href: "/admin", label: "admin" });
+  if (user?.role === "reviewer" || user?.role === "admin") links.push({ href: "/review", label: "review" });
+  if (user?.role === "admin") links.push({ href: "/admin", label: "admin" });
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-background text-foreground">
@@ -36,21 +34,27 @@ export default function Shell({
         <div className="order-last basis-full sm:order-none sm:basis-auto">
           <NavLinks links={links} />
         </div>
-        <div className="ml-auto flex items-center gap-3">
-          <Link
-            href="/app/shop"
-            className="font-pixel rounded-[4px] bg-black px-[0.55em] py-[0.3em] text-[1.05rem] leading-none text-white"
-            title="Your BITES"
-          >
-            {bites} BITES
-          </Link>
-          <span className="hidden text-sm font-medium text-black/60 sm:inline">{user.displayName}</span>
-          <form action="/api/auth/signout" method="post">
-            <button type="submit" className={`${pixelButtonClass} text-[0.75rem]`}>
-              sign out
-            </button>
-          </form>
-        </div>
+        {user ? (
+          <div className="ml-auto flex items-center gap-3">
+            <Link
+              href="/app/shop"
+              className="font-pixel rounded-[4px] bg-black px-[0.55em] py-[0.3em] text-[1.05rem] leading-none text-white"
+              title="Your BITES"
+            >
+              {bites} BITES
+            </Link>
+            <span className="hidden text-sm font-medium text-black/60 sm:inline">{user.displayName}</span>
+            <form action="/api/auth/signout" method="post">
+              <button type="submit" className={`${pixelButtonClass} text-[0.75rem]`}>
+                sign out
+              </button>
+            </form>
+          </div>
+        ) : (
+          <AuthPopupLink href="/login?next=/app/guides" className={`${pixelButtonClass} ml-auto text-[0.75rem]`}>
+            sign in
+          </AuthPopupLink>
+        )}
       </header>
       <hr className="rule" />
       <main className="flex flex-1 flex-col px-[var(--gutter)] py-[clamp(1.5rem,3vw,48px)]">{children}</main>

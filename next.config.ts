@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 // srcdoc app frames inherit this CSP: frame-src stops them navigating away; don't add script-src/default-src here (see AppFrame).
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      { source: "/guide", destination: "/app/guides", permanent: false },
+      { source: "/guides", destination: "/app/guides", permanent: false },
+    ];
+  },
   async headers() {
     return [
       {
