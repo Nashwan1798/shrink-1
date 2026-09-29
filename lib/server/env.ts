@@ -32,6 +32,8 @@ export const env = {
 
   SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN ?? "",
   SLACK_CHANNEL_ID: process.env.SLACK_CHANNEL_ID ?? "",
+  // #shrink; participants are invited when they finish /welcome. Empty disables it.
+  SLACK_PROGRAM_CHANNEL_ID: process.env.SLACK_PROGRAM_CHANNEL_ID ?? "C0AQTQMV2SJ",
   // DMs to participants (ship decisions, order updates) are off unless SLACK_DMS=1.
   SLACK_DMS: process.env.SLACK_DMS === "1" || process.env.SLACK_DMS === "true",
 

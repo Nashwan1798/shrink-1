@@ -12,7 +12,7 @@ import type { Address } from "./auth/hca";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-async function slack(method: string, body: Record<string, unknown>): Promise<void> {
+async function slack(method: string, body: Record<string, unknown>, fine: string[] = []): Promise<void> {
   if (!env.SLACK_BOT_TOKEN) return;
   try {
     const res = await fetch(`https://slack.com/api/${method}`, {
@@ -22,7 +22,7 @@ async function slack(method: string, body: Record<string, unknown>): Promise<voi
       signal: AbortSignal.timeout(10_000),
     });
     const json = (await res.json()) as { ok?: boolean; error?: string };
-    if (!res.ok || !json.ok) console.error(`[slack] ${method} failed: ${json.error ?? res.status}`);
+    if ((!res.ok || !json.ok) && !fine.includes(json.error ?? "")) console.error(`[slack] ${method} failed: ${json.error ?? res.status}`);
   } catch (e) {
     console.error(`[slack] ${method} threw`, e);
   }
@@ -85,6 +85,12 @@ export async function orderHandled(order: Order, user: User) {
   await dm(user, text);
 }
 
+
+// Needs channels:manage, and the bot has to be in the channel itself.
+export async function joinedProgram(user: Pick<User, "slackId">) {
+  if (!env.SLACK_PROGRAM_CHANNEL_ID || !user.slackId) return;
+  await slack("conversations.invite", { channel: env.SLACK_PROGRAM_CHANNEL_ID, users: user.slackId }, ["already_in_channel"]);
+}
 
 export async function loadShipAndAuthor(shipId: string) {
   const [row] = await db
