@@ -163,6 +163,32 @@ body {
   }
 }
 
+/* A soft sheen that crosses the CTA every few seconds. */
+@keyframes cta-sweep {
+  0% { transform: translateX(-100%) skewX(-20deg); }
+  22%, 100% { transform: translateX(250%) skewX(-20deg); }
+}
+.cta-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.cta-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  transform: translateX(-100%) skewX(-20deg);
+  animation: cta-sweep 4s cubic-bezier(0.45, 0, 0.25, 1) 2s infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-sweep::after {
+    animation: none;
+    display: none;
+  }
+}
+
 @property --flip {
   syntax: "<number>";
   inherits: true;

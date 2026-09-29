@@ -88,7 +88,7 @@ export default function Home() {
           </p>
 
           <div className="fade-in-late mt-[clamp(1.25rem,4vh,56px)] flex flex-wrap items-center justify-center gap-4">
-            <AuthPopupLink href="/login?next=/app" className={`${darkPixel} text-[clamp(1rem,1.3vw,1.4rem)]`}>
+            <AuthPopupLink href="/login?next=/app" className={`${darkPixel} cta-sweep text-[clamp(1rem,1.3vw,1.4rem)]`}>
               Start Now!
             </AuthPopupLink>
           </div>
@@ -233,7 +233,7 @@ export default function Home() {
           ))}
         </div>
         <div className="mt-[clamp(2rem,4vw,72px)] flex flex-wrap items-center gap-4">
-          <AuthPopupLink href="/login?next=/app" className={`${darkPixel} text-[clamp(1rem,1.3vw,1.4rem)]`}>
+          <AuthPopupLink href="/login?next=/app" className={`${darkPixel} cta-sweep text-[clamp(1rem,1.3vw,1.4rem)]`}>
             Start Now!
           </AuthPopupLink>
         </div>
