@@ -21,7 +21,7 @@ export default function GuidesPage() {
                 <li key={g.slug} className="border-b-2 border-panel-border last:border-0">
                   <Link
                     href={`/app/guides/${g.slug}`}
-                    className="group -mx-3 flex items-start gap-4 rounded-[8px] px-3 py-4 transition-colors hover:bg-black/[0.04]"
+                    className="group -mx-3 flex items-center gap-4 rounded-[8px] px-3 py-4 transition-colors hover:bg-black/[0.04]"
                   >
                     <span className="grid size-8 shrink-0 place-content-center rounded-[5px] bg-accent font-pixel text-[1rem] leading-none">
                       {n}
@@ -36,11 +36,8 @@ export default function GuidesPage() {
                         )}
                         {g.soon && <span className="text-sm font-medium text-black/40">coming soon!</span>}
                       </span>
-                      <span className="mt-0.5 block max-w-[62ch] text-[0.95rem] font-medium leading-snug text-black/60">
-                        {g.blurb}
-                      </span>
                     </span>
-                    <span aria-hidden className="mt-1 font-semibold text-black/30 transition-transform group-hover:translate-x-0.5 group-hover:text-black">
+                    <span aria-hidden className="font-semibold text-black/30 transition-transform group-hover:translate-x-0.5 group-hover:text-black">
                       →
                     </span>
                   </Link>

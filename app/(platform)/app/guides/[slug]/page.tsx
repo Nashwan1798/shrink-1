@@ -68,7 +68,6 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               </span>
             )}
           </div>
-          <p className="mt-2 text-[length:var(--text-lead)] leading-snug text-black/60">{guide.blurb}</p>
         </header>
 
         <div className="pt-6">
