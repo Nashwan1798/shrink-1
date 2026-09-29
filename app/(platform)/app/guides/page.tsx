@@ -8,7 +8,7 @@ import { GUIDES } from "./guides";
 export default function GuidesPage() {
   return (
     <>
-      <H1 sub="how to go from an empty folder to a ship. read the first one before you write any code.">guides</H1>
+      <H1 sub="from an empty folder to a shipped app. if you're new, read setting up before you write any code.">guides</H1>
 
       {(["making it", "badges"] as const).map((group, gi) => (
         <section key={group} className={`${gi ? "mt-[clamp(1.5rem,3vw,48px)] " : ""}border-t-4 border-rule pt-4`}>

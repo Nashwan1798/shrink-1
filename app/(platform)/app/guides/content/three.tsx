@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import { A, C, Code, H2, H3, Note, P, UL } from "../prose";
 import { THREE_PROJECTION, WEBGL } from "./snippets";
 
@@ -5,85 +6,110 @@ export default function Three() {
   return (
     <>
       <P>
-        Two ways to do it. Projecting points yourself on a 2D canvas is short and easy to follow, and it&rsquo;s
-        enough for wireframes, particles and starfields. A WebGL shader costs more bytes up front but gets you solid,
-        lit shapes. Both count.
+        Either of the two ways below gets the badge. Start with the first one, where you do the math yourself on a
+        normal canvas. The shader after it is for when you want solid shapes with lighting and don't mind more
+        setup.
       </P>
 
-      <H2>projecting it yourself</H2>
+      <H2>doing the math yourself</H2>
       <P>
-        A point at <C>(x, y, z)</C> lands on screen at <C>(x / z, y / z)</C>, scaled up and moved to the center.
-        Things further away get divided by more, so they shrink toward the middle. That&rsquo;s all perspective is.
-        Rotation is sin and cos on two of the three axes.
+        Train tracks look like they meet in the distance, because further-away things look smaller and closer to the
+        middle of what you're looking at. In code, a point has <C>x</C>, <C>y</C>, and <C>z</C> for how far away it
+        is, and dividing <C>x</C> and <C>y</C> by <C>z</C> gives you where it lands on the screen.
+      </P>
+      <P>
+        To spin the points, you rotate them before dividing. That takes a bit of <C>sin</C> and <C>cos</C>, which
+        you can use without knowing why it works.
+      </P>
+      <P>
+        Replace the <C>draw</C> function in the <A href="/app/guides/writing">starting file</A> with this and you'll
+        get a spinning cloud of 500 dots:
       </P>
       <Code name="points">{THREE_PROJECTION}</Code>
-      <UL>
-        <li>sorting by depth and drawing far to near is how you fake which thing is in front</li>
-        <li>
-          for lines, project both ends of each edge and <C>lineTo</C> between them. A cube is 8 points and 12 edges
-        </li>
-        <li>to rotate on more axes, do the same sin/cos step again on another pair (y and z, say)</li>
-      </UL>
+      <P>To tilt it as well as spin it, add these two lines just above <C>rz += 3</C>:</P>
+      <Code name="tilt">{`
+ry = y * cos(angle / 2) - rz * sin(angle / 2);
+rz = y * sin(angle / 2) + rz * cos(angle / 2);
+`}</Code>
 
       <H2>a WebGL shader</H2>
       <P>
-        This draws one triangle that covers the screen and runs a small program, the fragment shader, for every pixel.
-        The shader sends a ray out from the camera through that pixel and steps along it until it hits something. The
-        scene is one function that says how far any point is from the nearest surface.
+        A shader is a small program that runs on the graphics card. The one that matters here (the "fragment
+        shader") runs once for every pixel, and its job is to decide that pixel's color. It's written in GLSL, which
+        is like JavaScript except you have to say what type everything is (<C>float</C>, <C>vec3</C> and so on).
       </P>
       <P>
-        Complete, working, and about 1.5kb after the build script, which leaves room for your own scene.
+        This demo uses raymarching. For each pixel, picture a line going from the camera, through that pixel, into
+        the scene. The <C>scene</C> function tells you how far any point is from the nearest surface. So you move
+        along the line by that distance, ask again, and keep going. When the distance gets tiny, you've hit a surface, and the pixel is colored by how much that
+        surface faces the light.
+      </P>
+      <P>
+        The JavaScript part sets up WebGL and draws one big triangle that covers the screen, so the shader has pixels
+        to run on. You can leave it alone. This is a complete app that draws a spinning gold box. It builds to about
+        1.6kb, so about half your space is left for your own scene.
       </P>
       <Code name="src/index.html">{WEBGL}</Code>
 
-      <H3>changing the scene</H3>
+      <H3>your own scene</H3>
       <P>
-        Everything happens in <C>scene()</C>. It returns a distance, and you build shapes from these:
+        Everything you see comes from <C>scene()</C>, which returns how far <C>p</C> is from the nearest surface.
+        Some shapes to build with:
       </P>
       <UL>
         <li>
-          sphere: <C>length(p) - radius</C>
+          sphere: <C>length(p) - 1.</C> (1 is the radius)
         </li>
         <li>
-          box: <C>length(max(abs(p) - size, 0.))</C>
+          box: <C>length(max(abs(p) - .5, 0.))</C> (.5 is half its width)
         </li>
         <li>
-          floor: <C>p.y + 1.</C>
+          flat floor: <C>p.y + 1.</C>
         </li>
         <li>
-          two shapes together: <C>min(a, b)</C>. One cut out of the other: <C>max(a, -b)</C>
-        </li>
-        <li>
-          infinite copies: <C>p = mod(p + 1., 2.) - 1.</C> before measuring
+          move a shape by subtracting from <C>p</C> first, so <C>length(p - vec3(2., 0., 0.)) - 1.</C> is a sphere
+          moved to the right
         </li>
       </UL>
+      <P>To show two shapes, work out both distances and return the smaller one:</P>
+      <Code name="two shapes">{`
+float scene(vec3 p) {
+  float ball = length(p) - 1.;
+  float ground = p.y + 1.;
+  return min(ball, ground);
+}
+`}</Code>
       <P>
-        <A href="https://iquilezles.org/articles/distfunctions/">Inigo Quilez&rsquo;s list of distance functions</A>{" "}
-        has nearly every shape you&rsquo;d want.
+        <C>max(a, -b)</C> cuts shape <C>b</C> out of shape <C>a</C>. Inigo Quilez has a{" "}
+        <A href="https://iquilezles.org/articles/distfunctions/">long list of shapes</A> written this way.
       </P>
 
-      <H3>things that trip people up</H3>
+      <H3>when it doesn't work</H3>
       <UL>
         <li>
-          GLSL wants <C>1.</C> not <C>1</C> for floats. Mixing them is a compile error
+          A broken shader gives you a black screen. Open the console (F12) and look for the error message. The demo
+          logs it for you.
         </li>
         <li>
-          shader errors are silent. While writing it, log{" "}
-          <C>gl.getShaderInfoLog(shader)</C> after compiling, and take it out before shipping
+          GLSL is fussy about numbers. If <C>x</C> is a <C>float</C>, <C>x * 2</C> is an error and <C>x * 2.</C> is fine, because{" "}
+          <C>2</C> is a whole number and <C>2.</C> is a decimal. Inside things like <C>vec3(0, 1, 0)</C> either
+          works. If you get an error, check for a missing dot first.
         </li>
         <li>
-          no <C>#define</C> or other <C>#</C> lines. The build script puts shaders on one line, and those need their
-          own
+          Don't use lines that start with <C>#</C>, like <C>#define</C>. The build puts the whole shader on one line,
+          and those need their own line.
         </li>
         <li>
-          if it&rsquo;s slow, render fewer pixels: set <C>c.width</C> to half of <C>innerWidth</C> and stretch it
-          with CSS
+          If it's slow, draw fewer pixels. In <C>onresize</C>, use <C>innerWidth / 2</C> and{" "}
+          <C>innerHeight / 2</C>, then add <C>width: 100vw; height: 100vh</C> to the canvas CSS so it still fills
+          the screen.
         </li>
       </UL>
 
       <Note>
-        The <C>glsl</C> tag in the example does nothing at runtime. It&rsquo;s a marker so the build script knows
-        which strings are shaders and can squeeze their whitespace. Don&rsquo;t use <C>{"${}"}</C> inside them.
+        <C>glsl</C> in front of the shader text is a marker for the build script, which uses it to find and squash
+        your shaders. Don't use <C>{"${}"}</C> inside them. The marker only keeps the text before the first{" "}
+        <C>{"${}"}</C>.
       </Note>
     </>
   );

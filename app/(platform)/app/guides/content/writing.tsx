@@ -1,93 +1,86 @@
-import { A, C, Code, H2, Note, P, UL } from "../prose";
+/* eslint-disable react/no-unescaped-entities */
+import { A, C, Code, H2, P, UL } from "../prose";
 import { SKELETON } from "./snippets";
 
 export default function Writing() {
   return (
     <>
-      <H2>pick something that fits</H2>
+      <H2>pick an idea that fits</H2>
       <P>
-        3kb is roughly 3,000 characters after minifying. That&rsquo;s room for one idea done properly. It is not room
-        for menus, levels, settings and a tutorial. The apps that turn out well usually have one mechanic or one toy at
-        the center, and the time goes into making that feel good.
-      </P>
-      <P>
-        A decent test: can you describe the whole app in one sentence without using &ldquo;and&rdquo;? If not, cut
-        until you can, and add things back if you have bytes left at the end.
+        3kb is about 3,000 characters of minified code, which is enough for a whole game or instrument as long as it
+        does one main thing. Menus and levels on top of that usually won't fit. One sentence test: if you can't say
+        what it does in one, it's too big, and the extras can wait until the end when you know how much room is
+        left.
       </P>
 
-      <H2>ignore the size at first</H2>
+      <H2>write it long first</H2>
       <P>
-        Write it readable. Long names, comments, blank lines. Terser strips and renames all of that for free, so short
-        names in your source save you nothing. Run the build now and then to see where you stand. If you&rsquo;re at
-        2kb with half the features done, it&rsquo;s better to find out early.
+        Give variables real names and write comments. The build shortens variable and function names and removes
+        comments, so none of that counts against you. The one catch is property names, the part after a dot like{" "}
+        <C>player.speed</C>, which stay exactly as you typed them. Keep those short-ish.
       </P>
 
-      <H2>a shape that works for most apps</H2>
+      <H2>a starting file</H2>
       <P>
-        Most of these come down to the same thing: some state, a function that changes it over time, a function that
-        draws it, and input handlers that poke it. This is a starting point, not a template to fill in:
+        Most apps here keep some state (where the player is, the score), change it a little every frame in{" "}
+        <C>update</C>, paint it in <C>draw</C>, and change it again when someone presses something. Here's an empty
+        version. Paste it into <C>src/index.html</C> and a red square slides across the screen. The badge
+        guides give you code to swap into it.
       </P>
       <Code name="src/index.html">{SKELETON}</Code>
-      <P>
-        Two things in there that look odd. <C>c</C> is never declared: an element with <C>id=&quot;c&quot;</C> is
-        available as a global called <C>c</C>, which saves you a <C>getElementById</C>. And <C>dt</C> is capped at 0.1
-        seconds, so when the tab is in the background and comes back, things don&rsquo;t jump across the screen.
-      </P>
+      <P>A few things in there you might not have seen:</P>
+      <UL>
+        <li>
+          <C>c</C> is never declared. An element with <C>id="c"</C> automatically gets a variable called <C>c</C>.
+        </li>
+        <li>
+          <C>requestAnimationFrame(frame)</C> runs <C>frame</C> right before the browser next draws the screen, and{" "}
+          <C>frame</C> asks for that again at the end. That's the loop, about 60 times a second.
+        </li>
+        <li>
+          <C>dt</C> is the seconds since the last frame, so <C>50 * dt</C> means "50 pixels per second". It moves the
+          same speed on a 60Hz monitor as on a 144Hz one.
+        </li>
+        <li>
+          <C>time</C> is milliseconds since the page opened.
+        </li>
+      </UL>
+      <P>Apps that are mostly buttons and text can skip the canvas and the loop.</P>
 
       <H2>no libraries</H2>
       <P>
-        Nothing can be loaded from the network, and even a small library minified is bigger than your whole budget. The
-        browser has enough built in. Canvas for drawing, Web Audio for sound, plain DOM elements for UI.
+        Nothing can be loaded from the internet (and libraries are too big anyway), so it's all plain JavaScript.{" "}
+        <C>{"<input type=range>"}</C> gives you a slider, <C>{"<input type=color>"}</C> a color picker, and{" "}
+        <C>contenteditable</C> makes any element typeable. Fonts like <C>monospace</C> and <C>sans-serif</C> are free.
       </P>
-      <P>Things that cost almost nothing because the browser does the work:</P>
+
+      <H2>things that don't work</H2>
       <UL>
         <li>
-          <C>{"<input type=range>"}</C>, <C>{"<input type=color>"}</C>, <C>{"<select>"}</C>, <C>{"<button>"}</C>
+          <C>localStorage</C> throws an error in a data URI, so scores can't be saved. If you use it, wrap it in{" "}
+          <C>try</C>/<C>catch</C>.
         </li>
+        <li>Images, fonts and sounds from other sites are all blocked. Draw or generate what you need.</li>
         <li>
-          <C>contenteditable</C> for a text area that looks like part of the page
-        </li>
-        <li>CSS transitions and animations, instead of animating in JS</li>
-        <li>
-          <C>font: 20px monospace</C> and the other built-in font families
+          Emoji and accented letters need <C>{"<meta charset=utf-8>"}</C> at the top, or they turn into garbage.
         </li>
       </UL>
 
-      <H2>things that don&rsquo;t work</H2>
-      <UL>
-        <li>
-          <strong>localStorage.</strong> A data URI has no origin, so storage throws an error. High scores reset on
-          reload. If you want to try it anyway, wrap it in <C>try</C>/<C>catch</C>.
-        </li>
-        <li>
-          <strong>Fonts, images, sounds from anywhere else.</strong> All blocked. If you want an image, draw it, or
-          store it in a string and decode it yourself.
-        </li>
-        <li>
-          <strong>Emoji and non-English text, by default.</strong> Without a charset, browsers read the URI as the
-          wrong encoding and you get garbage. Add <C>{"<meta charset=utf-8>"}</C> if you need them. Each emoji is
-          about 4 bytes, which is still cheap for a picture.
-        </li>
-      </UL>
-
-      <H2>test it in more than one place</H2>
+      <H2>where reviewers run it</H2>
       <P>
-        The preview on SHRINK runs your app in a sandboxed frame with the network blocked. That&rsquo;s what reviewers
-        see first, so check it there. Try another browser if you have one, and a phone if your app takes touch. If
-        it only works with a keyboard, that&rsquo;s fine, but say so on screen.
+        Reviewers open your app in a frame on the SHRINK site. It's the same as the address bar except for two
+        things. <C>alert()</C>, <C>confirm()</C> and <C>prompt()</C> are blocked, so show messages on the page. And
+        the keyboard does nothing until someone clicks the app, which the{" "}
+        <A href="/app/guides/input">input guide</A> has a fix for.
       </P>
 
-      <Note>
-        Keyboard apps inside a frame only get key presses after the frame is clicked. Put &ldquo;click to start&rdquo;
-        somewhere visible.
-      </Note>
-
-      <H2>when you&rsquo;re stuck</H2>
+      <H2>stuck?</H2>
       <P>
-        Ask in #shrink on Slack. For tricks, <A href="https://www.dwitter.net">Dwitter</A> has thousands of 140-character
-        canvas demos and <A href="https://js13kgames.com">js13k</A> has years of small games with source. Read how they
-        did something, then close the tab and write it yourself. Reviewers look at your source, and a copy is easy to
-        spot. <A href="https://developer.mozilla.org">MDN</A> covers every API mentioned in these guides.
+        Ask in #shrink on Slack. <A href="https://developer.mozilla.org">MDN</A> documents everything these guides
+        use, and <A href="https://www.dwitter.net">Dwitter</A> and <A href="https://js13kgames.com">js13k</A> are
+        full of tricks for tiny code. Use code from these guides freely. Anything you find elsewhere, work out how it
+        does what it does and then write your own version, since the reviewer does read your code and pasted code
+        stands out.
       </P>
     </>
   );

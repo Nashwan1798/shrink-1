@@ -1,82 +1,90 @@
+/* eslint-disable react/no-unescaped-entities */
 import { A, C, Code, H2, Note, P, UL } from "../prose";
-import { CANVAS_PIXELS, CANVAS_TRAILS } from "./snippets";
+import { CANVAS_PIXELS, CANVAS_ROTATE, CANVAS_TRAILS } from "./snippets";
 
 export default function Canvas() {
   return (
     <>
       <P>
-        Canvas is the cheapest way to get a lot on screen. One element, one context, and every drawing call is a few
-        bytes. The badge is for apps drawn with it, not ones with a canvas off in a corner.
+        A <C>{"<canvas>"}</C> is a rectangle you draw on with JavaScript. For the badge, the canvas has to be the
+        main part of what people see. A little drawing in the corner of a page won't get it.
       </P>
-
-      <H2>getting a context</H2>
-      <Code name="setup">{`
-<canvas id="c"></canvas>
-<script>
-  const ctx = c.getContext("2d");
-  onresize = () => {
-    c.width = innerWidth;
-    c.height = innerHeight;
-  };
-  onresize();
-</script>
-`}</Code>
       <P>
-        Setting <C>width</C> or <C>height</C> also clears the canvas and resets its settings (fill color, font,
-        transforms). Some tiny demos resize every frame for exactly that reason. It works, but set your styles after
-        it.
+        Everything below plugs into the <A href="/app/guides/writing">starting file</A>. That's where <C>c</C> (the
+        canvas), <C>ctx</C> (what you draw with) and <C>draw(time)</C> come from.
       </P>
 
-      <H2>the calls you&rsquo;ll use most</H2>
+      <H2>coordinates</H2>
+      <P>
+        <C>(0, 0)</C> is the top-left corner, <C>x</C> goes right, and <C>y</C> goes <em>down</em> (backwards from
+        math class). Everything's in pixels.
+      </P>
+
+      <H2>drawing things</H2>
       <UL>
         <li>
-          <C>fillRect(x, y, w, h)</C>: the cheapest shape there is. Pixel art, bars, backgrounds, clearing the screen
+          <C>ctx.fillStyle = "red"</C> picks the color for whatever you draw after it.
         </li>
         <li>
-          <C>beginPath()</C>, <C>arc(x, y, r, 0, 7)</C>, <C>fill()</C>: circles. 7 is just over 2π and shorter to type
+          <C>ctx.fillRect(x, y, width, height)</C> draws a rectangle. Drawing one over the whole canvas is how you
+          clear the screen.
         </li>
         <li>
-          <C>moveTo</C>, <C>lineTo</C>, <C>stroke()</C>: lines and outlines
+          <C>ctx.beginPath(); ctx.arc(x, y, radius, 0, 7); ctx.fill();</C> draws a circle. <C>beginPath</C> starts a
+          new shape, and without it every circle you've drawn gets filled again. The <C>0, 7</C> is the start and end
+          angle. A full circle is about 6.28, so 7 covers it.
         </li>
         <li>
-          <C>fillText(text, x, y)</C>: text, using whatever <C>ctx.font</C> is set to
+          <C>ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();</C> draws a line. Lines are black
+          unless you set <C>ctx.strokeStyle = "white"</C> first, which you'll need on a black background.
         </li>
         <li>
-          <C>save()</C>, <C>translate</C>, <C>rotate</C>, <C>restore()</C>: draw something rotated around its own center
-        </li>
-        <li>
-          <C>globalAlpha</C>, <C>globalCompositeOperation = &quot;lighter&quot;</C>: glow and blending with no extra
-          work
+          <C>ctx.font = "20px monospace"</C> and then <C>ctx.fillText("hi", x, y)</C> draws text.
         </li>
       </UL>
 
-      <H2>trails and color</H2>
+      <H2>trails and rainbows</H2>
       <P>
-        Instead of clearing each frame, paint a mostly transparent rectangle over the last one. Old frames fade out and
-        anything moving leaves a trail. Colors from <C>hsl()</C> let you cycle through the rainbow with one number.
+        The starting file clears the screen every frame. If you cover it with see-through black instead, old frames
+        fade out slowly and anything that moves leaves a trail. Replace the <C>draw</C> function with this:
       </P>
       <Code name="draw">{CANVAS_TRAILS}</Code>
-
-      <H2>working per pixel</H2>
       <P>
-        For effects like plasma, fire or noise, write pixels straight into an <C>ImageData</C>. Keep the buffer small
-        and let CSS stretch it. 160×90 is 14,400 pixels, which any laptop can redo every frame. Full screen at
-        1920×1080 is over 2 million, which is too slow in plain JS.
+        The backticks make a template string, and <C>{"${i * 30}"}</C> puts the value of <C>i * 30</C> into it. In{" "}
+        <C>hsl()</C> the first number is the hue, from 0 to 360 around the color wheel, so each dot gets its own
+        color.
       </P>
-      <Code name="pixels">{CANVAS_PIXELS}</Code>
+
+      <H2>spinning something</H2>
+      <P>
+        <C>ctx.rotate</C> spins around <C>(0, 0)</C>, the top-left corner, so you move <C>(0, 0)</C> to the middle of
+        the thing first and draw it centered there. Add this at the end of <C>draw</C>:
+      </P>
+      <Code name="spin">{CANVAS_ROTATE}</Code>
+      <P>
+        If it spins around a corner instead of its middle, you probably drew it at <C>(0, 0)</C> instead of at{" "}
+        <C>(-25, -25)</C>.
+      </P>
+
+      <H2>setting every pixel</H2>
+      <P>
+        Effects like fire, plasma or static set the color of each pixel one by one, using <C>ImageData</C>, which
+        holds 4 numbers per pixel (red, green, blue, and opacity), each from 0 to 255.
+      </P>
+      <P>
+        On a big screen that's millions of pixels, and it gets choppy. So cheat. Use a small canvas, like 160 by 90,
+        and let CSS stretch it. This one is a whole file, so use it instead of the starting file, not inside it:
+      </P>
+      <Code name="src/index.html">{CANVAS_PIXELS}</Code>
 
       <Note>
-        <C>image-rendering: pixelated</C> keeps the stretched pixels sharp. Leave it out and you get a soft blur, which
-        also looks nice for some effects.
+        <C>image-rendering: pixelated</C> keeps the stretched pixels sharp. Take it out if you'd rather they blur,
+        which can look nice for smoke or glow.
       </Note>
 
-      <H2>more</H2>
       <P>
-        <A href="https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D">
-          CanvasRenderingContext2D on MDN
-        </A>{" "}
-        lists every method. <A href="https://www.dwitter.net">Dwitter</A> is a good place to see how far 140 characters
-        of canvas can go.
+        For gradients, images made in code, and the rest, there's{" "}
+        <A href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial">MDN's canvas tutorial</A>.
       </P>
     </>
   );
