@@ -8,6 +8,7 @@ import { ledgerEntries, orders, ships, users } from "@/lib/server/db/schema";
 
 import AirtableSync from "./AirtableSync";
 import People from "./People";
+import SlackBackfill from "./SlackBackfill";
 
 export default async function AdminPage() {
   const admin = await requireRole("admin", "/admin");
@@ -54,6 +55,7 @@ export default async function AdminPage() {
             orders {openOrders.n > 0 && <span className="font-pixel">({openOrders.n})</span>}
           </Link>
           <AirtableSync />
+          <SlackBackfill />
         </nav>
       </div>
       <People people={people.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() }))} selfId={admin.id} />

@@ -10,7 +10,6 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env.local lib/server/db/migrate.mts",
     "db:studio": "drizzle-kit studio",
-    "slack:backfill": "tsx --env-file-if-exists=.env.local lib/server/slack-backfill.mts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

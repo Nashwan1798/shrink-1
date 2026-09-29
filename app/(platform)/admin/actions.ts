@@ -8,7 +8,7 @@ import { airtableConfigured, queueSync, syncAll } from "@/lib/server/airtable";
 import { actionRole } from "@/lib/server/auth/current";
 import { db } from "@/lib/server/db/client";
 import { auditEvents, users } from "@/lib/server/db/schema";
-import { loadOrderAndUser, orderHandled, readAddress } from "@/lib/server/effects";
+import { backfillProgramChannel, loadOrderAndUser, orderHandled, readAddress } from "@/lib/server/effects";
 import * as ledger from "@/lib/server/ledger";
 import { OrderError, handleOrder } from "@/lib/server/orders";
 import { requestOrigin } from "@/lib/server/origin";
@@ -101,4 +101,12 @@ export async function airtableSyncAction(): Promise<AdminState> {
   });
   await db.insert(auditEvents).values({ actorId: admin.id, action: "airtable.sync" });
   return { error: null, ok: "Sync started. Airtable fills in over the next minute or so." };
+}
+
+export async function slackBackfillAction(): Promise<AdminState> {
+  const admin = await actionRole("admin");
+  const r = await backfillProgramChannel();
+  if ("error" in r) return { error: r.error };
+  await db.insert(auditEvents).values({ actorId: admin.id, action: "slack.backfill", detail: r });
+  return { error: null, ok: `${r.invited} invited, ${r.already} already in${r.failed ? `, ${r.failed} failed (see logs)` : ""}.` };
 }

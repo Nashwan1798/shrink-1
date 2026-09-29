@@ -1,6 +1,6 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 
 import { hm } from "@/lib/program";
 
@@ -90,6 +90,36 @@ export async function orderHandled(order: Order, user: User) {
 export async function joinedProgram(user: Pick<User, "slackId">) {
   if (!env.SLACK_PROGRAM_CHANNEL_ID || !user.slackId) return;
   await slack("conversations.invite", { channel: env.SLACK_PROGRAM_CHANNEL_ID, users: user.slackId }, ["already_in_channel"]);
+}
+
+// Invites everyone who signed in and finished onboarding, for anyone the live
+// invite missed. `force` keeps a batch going past people already in the channel.
+export async function backfillProgramChannel(): Promise<{ invited: number; already: number; failed: number } | { error: string }> {
+  if (!env.SLACK_BOT_TOKEN || !env.SLACK_PROGRAM_CHANNEL_ID) return { error: "Set SLACK_BOT_TOKEN first." };
+  const rows = await db
+    .selectDistinct({ slackId: users.slackId })
+    .from(users)
+    .where(and(isNotNull(users.hcaSubject), isNotNull(users.onboardedAt), isNotNull(users.slackId)));
+  const ids = rows.map((r) => r.slackId!);
+  const n = { invited: 0, already: 0, failed: 0 };
+  for (let i = 0; i < ids.length; i += 100) {
+    const batch = ids.slice(i, i + 100);
+    const res = await fetch("https://slack.com/api/conversations.invite", {
+      method: "POST",
+      headers: { authorization: `Bearer ${env.SLACK_BOT_TOKEN}`, "content-type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ channel: env.SLACK_PROGRAM_CHANNEL_ID, users: batch.join(","), force: true }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    const json = (await res.json()) as { ok?: boolean; error?: string; errors?: { user: string; error: string }[] };
+    const errors = json.errors ?? [];
+    if (!json.ok && !errors.length) return { error: `Slack said ${json.error ?? res.status}.` };
+    const already = errors.filter((e) => e.error === "already_in_channel").length;
+    for (const e of errors) if (e.error !== "already_in_channel") console.error(`[slack] backfill ${e.user}: ${e.error}`);
+    n.invited += batch.length - errors.length;
+    n.already += already;
+    n.failed += errors.length - already;
+  }
+  return n;
 }
 
 export async function loadShipAndAuthor(shipId: string) {
