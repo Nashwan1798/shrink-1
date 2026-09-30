@@ -19,7 +19,8 @@ export type Funnel = {
   postViews: number;
   visitors: number;
   signedUp: number; // signed in with Hack Club Auth
-  onboarded: number; // finished /welcome (Hackatime linked)
+  linked: number; // linked a Hackatime account
+  onboarded: number; // finished /welcome
   active: number; // logged HTML time on Hackatime during the program
   shipped: number; // at least one ship
   approved: number; // at least one approved ship
@@ -46,6 +47,7 @@ export async function funnel(): Promise<Funnel> {
     db
       .select({
         signedUp: sql<number>`(count(*) filter (where ${users.hcaSubject} is not null))::int`,
+        linked: sql<number>`(count(*) filter (where ${users.hackatimeAccountId} is not null))::int`,
         onboarded: sql<number>`(count(*) filter (where ${users.onboardedAt} is not null))::int`,
       })
       .from(users),
@@ -62,6 +64,7 @@ export async function funnel(): Promise<Funnel> {
   return {
     ...FUNNEL_TOP,
     signedUp: u?.signedUp ?? 0,
+    linked: u?.linked ?? 0,
     onboarded: u?.onboarded ?? 0,
     active: a?.active ?? 0,
     shipped: s?.shipped ?? 0,
