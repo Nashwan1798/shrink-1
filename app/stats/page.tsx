@@ -115,8 +115,7 @@ export default async function StatsPage() {
             role="note"
             className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border border-accent/40 bg-accent/10 px-4 py-3 text-sm font-medium text-white/85"
           >
-            <span className="font-pixel text-accent">intentionally public.</span>
-            Everything here is aggregate: no names, no emails, nothing about any one person.
+            <span className="font-pixel text-accent">this page is intentionally public.</span>
           </p>
         )}
 
