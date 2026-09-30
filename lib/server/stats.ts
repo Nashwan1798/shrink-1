@@ -12,7 +12,7 @@ import { hackatimeDays, ledgerEntries, orders, ships, users } from "./db/schema"
 // analytics. Override with STATS_POST_VIEWS / STATS_VISITORS when they move.
 export const FUNNEL_TOP = {
   postViews: Number(process.env.STATS_POST_VIEWS) || 310,
-  visitors: Number(process.env.STATS_VISITORS) || 410,
+  visitors: Number(process.env.STATS_VISITORS) || 540,
 };
 
 export type Funnel = {
