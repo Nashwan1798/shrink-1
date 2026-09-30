@@ -200,41 +200,25 @@ export type ActivityTotals = {
   activeShrinkers: number; // distinct people with HTML time in the window
   codingSeconds: number;
   htmlSeconds: number;
-  languages: Slice[]; // top languages across everyone
 };
 
 export async function activityTotals(days: string[]): Promise<ActivityTotals> {
-  const empty = { activeCoders: 0, activeShrinkers: 0, codingSeconds: 0, htmlSeconds: 0, languages: [] };
+  const empty = { activeCoders: 0, activeShrinkers: 0, codingSeconds: 0, htmlSeconds: 0 };
   if (days.length === 0) return empty;
-  const inWindow = and(gte(hackatimeDays.day, days[0]), lte(hackatimeDays.day, days[days.length - 1]));
-  const [[t], langs] = await Promise.all([
-    db
-      .select({
-        activeCoders: sql<number>`(count(distinct ${hackatimeDays.userId}) filter (where ${hackatimeDays.totalSeconds} > 0))::int`,
-        activeShrinkers: sql<number>`(count(distinct ${hackatimeDays.userId}) filter (where ${hackatimeDays.htmlSeconds} > 0))::int`,
-        codingSeconds: sql<number>`coalesce(sum(${hackatimeDays.totalSeconds}), 0)::bigint`,
-        htmlSeconds: sql<number>`coalesce(sum(${hackatimeDays.htmlSeconds}), 0)::bigint`,
-      })
-      .from(hackatimeDays)
-      .where(inWindow),
-    db
-      .select({
-        name: sql<string>`l->>'name'`,
-        seconds: sql<number>`sum((l->>'seconds')::bigint)::bigint`,
-      })
-      .from(hackatimeDays)
-      .innerJoin(sql`jsonb_array_elements(${hackatimeDays.languages}) as l`, sql`true`)
-      .where(inWindow)
-      .groupBy(sql`l->>'name'`)
-      .orderBy(sql`sum((l->>'seconds')::bigint) desc`)
-      .limit(8),
-  ]);
+  const [t] = await db
+    .select({
+      activeCoders: sql<number>`(count(distinct ${hackatimeDays.userId}) filter (where ${hackatimeDays.totalSeconds} > 0))::int`,
+      activeShrinkers: sql<number>`(count(distinct ${hackatimeDays.userId}) filter (where ${hackatimeDays.htmlSeconds} > 0))::int`,
+      codingSeconds: sql<number>`coalesce(sum(${hackatimeDays.totalSeconds}), 0)::bigint`,
+      htmlSeconds: sql<number>`coalesce(sum(${hackatimeDays.htmlSeconds}), 0)::bigint`,
+    })
+    .from(hackatimeDays)
+    .where(and(gte(hackatimeDays.day, days[0]), lte(hackatimeDays.day, days[days.length - 1])));
   return {
     activeCoders: t?.activeCoders ?? 0,
     activeShrinkers: t?.activeShrinkers ?? 0,
     codingSeconds: Number(t?.codingSeconds ?? 0),
     htmlSeconds: Number(t?.htmlSeconds ?? 0),
-    languages: langs.map((l) => ({ name: l.name, seconds: Number(l.seconds) })),
   };
 }
 

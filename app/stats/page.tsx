@@ -7,7 +7,7 @@ import { activityTotals, dailyActivity, daysToRefresh, lastRefreshedAt, perPerso
 import { currentUser } from "@/lib/server/auth/session";
 import { byteHistogram, dailyCounts, funnel, overview } from "@/lib/server/stats";
 
-import { DauChart, DitherBar, FlowChart, Funnel, Glow, HoursChart, SizeChart } from "./Charts";
+import { DauChart, FlowChart, Funnel, Glow, HoursChart, SizeChart } from "./Charts";
 import Refresh from "./Refresh";
 
 export const dynamic = "force-dynamic";
@@ -63,7 +63,6 @@ export default async function StatsPage() {
   }));
   const flowData = flow.map((d) => ({ day: d.day, label: dayLabel(d.day), signups: d.signups, ships: d.ships, approved: d.approved }));
   const today = dau.at(-1);
-  const langTop = act.languages[0]?.seconds ?? 1;
   const hero = [
     { k: "signed up", v: n(f.signedUp), sub: `${n(o.onboarded)} finished setup` },
     { k: "building today", v: n(today?.shrink ?? 0), sub: `${n(today?.coding ?? 0)} on Hackatime at all` },
@@ -165,7 +164,7 @@ export default async function StatsPage() {
           </Section>
         </div>
 
-        <div className="grid gap-[clamp(2rem,4vw,64px)] lg:grid-cols-2">
+        <div className="grid gap-[clamp(2rem,4vw,64px)]">
           <Section title="sign-ups and ships per day" sub="By day.">
             <FlowChart data={flowData} />
             <Facts
@@ -176,18 +175,6 @@ export default async function StatsPage() {
                 ["re-ships", n(o.ships.reships)],
               ]}
             />
-          </Section>
-          <Section title="languages" sub="Where the time went.">
-            <ul className="flex flex-col gap-2">
-              {act.languages.length === 0 && <li className="text-sm text-white/45">Nothing read from Hackatime yet.</li>}
-              {act.languages.map((l) => (
-                <li key={l.name} className="grid grid-cols-[7rem_minmax(0,1fr)_4.5rem] items-center gap-3">
-                  <span className="truncate text-sm font-semibold tracking-tight">{l.name}</span>
-                  <DitherBar pct={(l.seconds / langTop) * 100} color={/html/i.test(l.name) ? "orange" : "grey"} className="h-5" />
-                  <span className="justify-self-end font-mono text-xs tabular-nums text-white/70">{hm(l.seconds)}</span>
-                </li>
-              ))}
-            </ul>
           </Section>
         </div>
 

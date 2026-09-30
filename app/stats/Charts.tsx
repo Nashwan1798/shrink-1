@@ -121,27 +121,7 @@ export function SizeChart({ data }: { data: { label: string; count: number }[] }
   );
 }
 
-// ---- dithered horizontal bars (funnel, languages) ----------------------------------------------
-
-export function DitherBar({ pct, color = "orange", className = "h-7" }: { pct: number; color?: DitherColor; className?: string }) {
-  const w = Math.max(0, Math.min(100, pct));
-  return (
-    <div className={`relative w-full overflow-hidden ${className}`} aria-hidden>
-      <div className="absolute inset-y-0 left-0" style={{ width: `${w}%` }}>
-        <DitherGradient from={color} to="transparent" direction="left" cell={3} />
-      </div>
-      {w > 0 && (
-        <div
-          className="absolute inset-y-0 w-[3px]"
-          style={{ left: `calc(${w}% - 3px)`, background: color === "grey" ? "rgba(255,255,255,.7)" : undefined }}
-          data-color={color}
-        >
-          <DitherGradient from={color} to={color} direction="right" cell={3} />
-        </div>
-      )}
-    </div>
-  );
-}
+// ---- decoration -------------------------------------------------------------------------------
 
 export function Glow({ color = "orange", className = "" }: { color?: DitherColor; className?: string }) {
   return <DitherGradient from={color} direction="down" cell={4} opacity={0.22} className={className} />;
