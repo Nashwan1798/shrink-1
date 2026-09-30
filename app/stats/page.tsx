@@ -66,7 +66,7 @@ export default async function StatsPage() {
   const hero = [
     { k: "signed up", v: n(f.signedUp), sub: `${n(o.onboarded)} finished setup` },
     { k: "building today", v: n(today?.shrink ?? 0), sub: `${n(today?.coding ?? 0)} on Hackatime at all` },
-    { k: "hours on HTML", v: (act.htmlSeconds / 3600).toFixed(1), sub: `of ${(act.codingSeconds / 3600).toFixed(1)}h logged` },
+    { k: "hours on SHRINK", v: (act.htmlSeconds / 3600).toFixed(1), sub: `of ${(act.codingSeconds / 3600).toFixed(1)}h on Hackatime` },
     { k: "ships", v: n(o.ships.total), sub: `${n(o.ships.approved)} approved · ${n(o.ships.pending)} waiting` },
     { k: "BITES minted", v: n(o.bites.minted), sub: `${n(o.bites.spent)} spent in the shop` },
     { k: "median size", v: o.bytes.median ? `${n(o.bytes.median)}B` : "—", sub: `cap is ${n(MAX_URI_BYTES)} bytes` },
@@ -142,7 +142,7 @@ export default async function StatsPage() {
 
         {/* daily actives */}
         <div className="grid gap-[clamp(2rem,4vw,64px)] lg:grid-cols-2">
-          <Section title="daily active on Hackatime" sub="People coding that day, and how many of them were on a SHRINK project.">
+          <Section title="daily active on Hackatime" sub="People coding that day, and how many of them we detected on a SHRINK project.">
             <DauChart data={dauData} />
             <Facts
               items={[
@@ -152,11 +152,11 @@ export default async function StatsPage() {
               ]}
             />
           </Section>
-          <Section title="hours logged per day" sub="All Hackatime time, SHRINK vs. the rest.">
+          <Section title="hours logged per day" sub="All Hackatime time, detected SHRINK work vs. the rest.">
             <HoursChart data={hoursData} />
             <Facts
               items={[
-                ["HTML share of all time", pct(act.htmlSeconds, act.codingSeconds)],
+                ["SHRINK share of all time", pct(act.htmlSeconds, act.codingSeconds)],
                 ["avg per active SHRINK builder", act.activeShrinkers ? hm(act.htmlSeconds / act.activeShrinkers) : "—"],
                 ["avg per day", dau.length ? hm(act.codingSeconds / dau.length) : "—"],
               ]}
@@ -221,7 +221,7 @@ export default async function StatsPage() {
               <Refresh lastRefreshed={last ? last.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : null} />
             </div>
             <Table
-              head={["person", "SHRINK days", "active days", "HTML time", "all time"]}
+              head={["person", "SHRINK days", "active days", "SHRINK time", "all time"]}
               rows={people.map((p) => [
                 p.slackId ? (
                   <a key={p.userId} href={`https://hackclub.slack.com/team/${p.slackId}`} className="underline decoration-white/30 underline-offset-[0.2em] hover:decoration-accent">

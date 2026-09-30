@@ -56,8 +56,8 @@ export function DauChart({ data }: { data: DauPoint[] }) {
 export type HoursPoint = { day: string; label: string; html: number; other: number };
 
 const HOURS: ChartConfig = {
-  html: { label: "HTML", color: "orange" },
-  other: { label: "everything else", color: "grey" },
+  html: { label: "SHRINK", color: "orange" },
+  other: { label: "other", color: "grey" },
 };
 
 export function HoursChart({ data }: { data: HoursPoint[] }) {
