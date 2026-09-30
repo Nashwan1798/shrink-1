@@ -246,8 +246,8 @@ export default async function StatsPage() {
               empty="No Hackatime rows yet. Hit backfill."
             />
             <p className="mt-3 max-w-[70ch] font-mono text-xs text-white/40">
-              A project counts as SHRINK when it has HTML and, across every day we have read, no files a SHRINK app shouldn&apos;t have:
-              images, JSX/TS, other languages. One offender anywhere invalidates the whole project.
+              A project counts as SHRINK when it has HTML, had no time on Hackatime before Sep 27, and across every day we have read has no
+              files a SHRINK app shouldn&apos;t: images, JSX/TS, other languages. One offender anywhere invalidates the whole project.
             </p>
           </Section>
         )}

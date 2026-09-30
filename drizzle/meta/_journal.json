@@ -57,6 +57,13 @@
       "when": 1790798840478,
       "tag": "0007_hackatime_projects",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790799611666,
+      "tag": "0008_hackatime_project_history",
+      "breakpoints": true
     }
   ]
 }

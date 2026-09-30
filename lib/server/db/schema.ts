@@ -229,6 +229,21 @@ export const hackatimeProjects = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.day, t.project] }), index("hackatime_projects_user_idx").on(t.userId, t.project)],
 );
 
+// Seconds a project had on Hackatime before the SHRINK cutoff, checked once
+// per (person, project). Anything above zero means the project predates SHRINK.
+export const hackatimeProjectHistory = pgTable(
+  "hackatime_project_history",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    project: text("project").notNull(),
+    beforeSeconds: integer("before_seconds").notNull().default(0),
+    checkedAt: now("checked_at"),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.project] })],
+);
+
 export type User = typeof users.$inferSelect;
 export type HackatimeDay = typeof hackatimeDays.$inferSelect;
 export type Ship = typeof ships.$inferSelect;

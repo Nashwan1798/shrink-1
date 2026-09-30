@@ -6,7 +6,7 @@ import { PROGRAM_START } from "@/lib/program";
 
 import { decrypt } from "./crypto";
 import { db } from "./db/client";
-import { hackatimeDays, hackatimeProjects, users } from "./db/schema";
+import { hackatimeDays, hackatimeProjectHistory, hackatimeProjects, users } from "./db/schema";
 import { env, staging } from "./env";
 import { hackatimeTokenBinding } from "./hackatime";
 
@@ -17,8 +17,12 @@ import { hackatimeTokenBinding } from "./hackatime";
 // only if, over every day we've seen it, someone touched HTML in it and never
 // touched anything a SHRINK project has no business having (images, JSX, TS,
 // Python, ...). One PNG on day two invalidates the project on day one as well.
+// The project also has to be new: any time logged on it before PROJECT_CUTOFF
+// (the weekend before launch) disqualifies it.
 
 const HEARTBEATS_PATH = "/api/v1/my/heartbeats";
+const STATS_PATH = "/api/v1/users/my/stats";
+export const PROJECT_CUTOFF = "2026-09-27";
 // Hackatime attributes the gap to the next heartbeat to the earlier one, capped here.
 const GAP_CAP = 120;
 const CONCURRENCY = 4;
@@ -136,6 +140,24 @@ async function fetchDay(token: string, day: string): Promise<DayStats | null> {
   );
 }
 
+// Seconds this project had before the cutoff: zero means it's a fresh project.
+async function fetchBeforeCutoff(token: string, project: string): Promise<number | null> {
+  const url = new URL(`${env.HACKATIME_HOST}${STATS_PATH}`);
+  url.searchParams.set("filter_by_project", project);
+  url.searchParams.set("start_date", "2000-01-01T00:00:00Z");
+  url.searchParams.set("end_date", `${PROJECT_CUTOFF}T00:00:00Z`);
+  url.searchParams.set("total_seconds", "true");
+  const res = await fetch(url, {
+    headers: { authorization: `Bearer ${token}`, accept: "application/json" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (res.status === 401 || res.status === 403 || res.status === 404) return null;
+  if (!res.ok) throw new Error(`Hackatime ${res.status}`);
+  const body = (await res.json()) as { total_seconds?: unknown };
+  return Math.max(0, Math.round(Number(body.total_seconds) || 0));
+}
+
 // Deterministic pretend heartbeats so the page has something to show locally:
 // a clean SHRINK project, one poisoned by a PNG, and a Python project.
 function fakeDay(userId: string, day: string): DayStats {
@@ -190,16 +212,44 @@ async function doRefresh(days: string[]): Promise<RefreshResult> {
         }
         if (!token) continue;
       }
+      const seen = new Set<string>();
       for (const day of days) {
         try {
           const stats = staging() ? fakeDay(p.id, day) : await fetchDay(token!, day);
           if (!stats) break; // token revoked: nothing more to read for this person
           await storeDay(p.id, day, stats);
+          for (const pr of stats.perProject) if (pr.hasHtml && pr.offenders.length === 0) seen.add(pr.project);
           touched.add(p.id);
           rows++;
         } catch (e) {
           failed++;
           console.error(`[activity] ${p.id} ${day}`, e);
+        }
+      }
+      // Only projects that could still pass are worth asking about, and each
+      // only once: the past doesn't change.
+      if (seen.size) {
+        const known = new Set(
+          (
+            await db
+              .select({ project: hackatimeProjectHistory.project })
+              .from(hackatimeProjectHistory)
+              .where(sql`${hackatimeProjectHistory.userId} = ${p.id}`)
+          ).map((r) => r.project),
+        );
+        for (const project of seen) {
+          if (known.has(project)) continue;
+          try {
+            const before = staging() ? (project === "tiny-snake" ? 7200 : 0) : await fetchBeforeCutoff(token!, project);
+            if (before === null) break;
+            await db
+              .insert(hackatimeProjectHistory)
+              .values({ userId: p.id, project, beforeSeconds: before, checkedAt: new Date() })
+              .onConflictDoUpdate({ target: [hackatimeProjectHistory.userId, hackatimeProjectHistory.project], set: { beforeSeconds: before, checkedAt: new Date() } });
+          } catch (e) {
+            failed++;
+            console.error(`[activity] ${p.id} history ${project}`, e);
+          }
         }
       }
     }
@@ -223,16 +273,18 @@ async function storeDay(userId: string, day: string, s: DayStats): Promise<void>
   });
 }
 
-// A project passes if any day had HTML and no day had an offender. Then each
-// day's SHRINK time is the sum of its passing projects.
+// A project passes if any day had HTML, no day had an offender, and we have
+// confirmed it had no time before the cutoff. Then each day's SHRINK time is
+// the sum of its passing projects.
 async function recomputeShrink(userIds: string[]): Promise<void> {
   await db.execute(sql`
     with verdict as (
-      select user_id, project
-      from ${hackatimeProjects}
-      where user_id in ${userIds}
-      group by user_id, project
-      having bool_or(has_html) and not bool_or(cardinality(offenders) > 0)
+      select hp.user_id, hp.project
+      from ${hackatimeProjects} hp
+      join ${hackatimeProjectHistory} h on h.user_id = hp.user_id and h.project = hp.project and h.before_seconds = 0
+      where hp.user_id in ${userIds}
+      group by hp.user_id, hp.project
+      having bool_or(hp.has_html) and not bool_or(cardinality(hp.offenders) > 0)
     )
     update ${hackatimeDays} d
     set html_seconds = coalesce((
@@ -359,21 +411,26 @@ export async function perPersonActivity(days: string[]): Promise<PersonActivity[
              sum(p.seconds) filter (where p.day between ${days[0]} and ${days[days.length - 1]})::int as seconds,
              bool_or(p.has_html) as "hasHtml",
              (select array(select distinct o from ${hackatimeProjects} x, unnest(x.offenders) o
-                           where x.user_id = p.user_id and x.project = p.project order by o limit 8)) as offenders
+                           where x.user_id = p.user_id and x.project = p.project order by o limit 8)) as offenders,
+             (select h.before_seconds from ${hackatimeProjectHistory} h where h.user_id = p.user_id and h.project = p.project) as "beforeSeconds"
       from ${hackatimeProjects} p
       group by p.user_id, p.project
       order by 3 desc nulls last
-    `) as Promise<{ userId: string; project: string; seconds: number | null; hasHtml: boolean; offenders: string[] }[]>,
+    `) as Promise<{ userId: string; project: string; seconds: number | null; hasHtml: boolean; offenders: string[]; beforeSeconds: number | null }[]>,
   ]);
   const byUser = new Map<string, ProjectVerdict[]>();
   for (const p of projects) {
     if (!p.seconds) continue;
     const list = byUser.get(p.userId) ?? [];
+    const why = [...p.offenders];
+    if (!p.hasHtml) why.unshift("no HTML");
+    if (p.beforeSeconds == null) why.push(p.hasHtml && p.offenders.length === 0 ? "history unchecked" : "");
+    else if (p.beforeSeconds > 0) why.push(`started before ${PROJECT_CUTOFF.slice(5)}`);
     list.push({
       project: p.project,
       seconds: Number(p.seconds),
-      shrink: p.hasHtml && p.offenders.length === 0,
-      offenders: p.hasHtml ? p.offenders : ["no HTML", ...p.offenders],
+      shrink: p.hasHtml && p.offenders.length === 0 && p.beforeSeconds === 0,
+      offenders: why.filter(Boolean),
     });
     byUser.set(p.userId, list);
   }
