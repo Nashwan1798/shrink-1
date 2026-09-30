@@ -1,4 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [{ "path": "/api/cron/airtable", "schedule": "0 * * * *" }]
+  "crons": [
+    {
+      "path": "/api/cron/airtable",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/hackatime",
+      "schedule": "30 * * * *"
+    }
+  ]
 }

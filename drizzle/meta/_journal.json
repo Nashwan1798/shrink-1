@@ -43,6 +43,13 @@
       "when": 1790621505522,
       "tag": "0005_slack_join",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790797646475,
+      "tag": "0006_hackatime_days",
+      "breakpoints": true
     }
   ]
 }

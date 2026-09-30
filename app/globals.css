@@ -10,6 +10,12 @@
   --accent: #f6c201;
   --ink: #0e0f0d;
 
+  /* shadcn-style tokens the dither-kit charts read. */
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --muted-foreground: rgba(0, 0, 0, 0.55);
+  --border: #bfbcc5;
+
   --gutter: clamp(1.25rem, 5.36vw, 103px);
   --text-display: clamp(2rem, 3.4vw, 4rem);
   --text-body: clamp(1.0625rem, 1.3vw, 1.5rem);
@@ -27,6 +33,10 @@
   --color-card: var(--card);
   --color-accent: var(--accent);
   --color-ink: var(--ink);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
   --font-sans: var(--font-google-sans-flex), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-ui: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "SF Pro", "Inter", system-ui, sans-serif;

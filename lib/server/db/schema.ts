@@ -6,6 +6,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -189,7 +190,26 @@ export const scanCache = pgTable("scan_cache", {
   createdAt: now("created_at"),
 });
 
+// One row per person per UTC day of Hackatime activity, refreshed by the cron
+// and the stats page. `htmlSeconds` is the SHRINK signal: time in HTML.
+export const hackatimeDays = pgTable(
+  "hackatime_days",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    day: text("day").notNull(),
+    totalSeconds: integer("total_seconds").notNull().default(0),
+    htmlSeconds: integer("html_seconds").notNull().default(0),
+    languages: jsonb("languages").$type<{ name: string; seconds: number }[]>().notNull().default([]),
+    projects: jsonb("projects").$type<{ name: string; seconds: number }[]>().notNull().default([]),
+    fetchedAt: now("fetched_at"),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] }), index("hackatime_days_day_idx").on(t.day)],
+);
+
 export type User = typeof users.$inferSelect;
+export type HackatimeDay = typeof hackatimeDays.$inferSelect;
 export type Ship = typeof ships.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type LedgerEntry = typeof ledgerEntries.$inferSelect;

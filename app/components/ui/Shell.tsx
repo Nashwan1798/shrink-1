@@ -21,6 +21,7 @@ export default function Shell({ user, bites, hasOrders, children }: Props) {
       ]
     : [{ href: "/app/guides", label: "guides" }];
   if (hasOrders) links.push({ href: "/app/orders", label: "orders" });
+  links.push({ href: "/stats", label: "stats" });
   if (user?.role === "reviewer" || user?.role === "admin") links.push({ href: "/review", label: "review" });
   if (user?.role === "admin") links.push({ href: "/admin", label: "admin" });
 
