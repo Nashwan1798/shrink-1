@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { BADGE_BY_SLUG } from "@/lib/program";
 
 import { GUIDES, GUIDE_BY_SLUG } from "../guides";
+import { components } from "../prose";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const guide = GUIDE_BY_SLUG.get((await params).slug);
@@ -71,7 +72,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
         </header>
 
         <div className="pt-6">
-          {guide.soon ? <p className="text-[length:var(--text-lead)] text-black/60">coming soon!</p> : <Body />}
+          {guide.soon ? <p className="text-[length:var(--text-lead)] text-black/60">coming soon!</p> : <Body components={components} />}
         </div>
 
         <footer className="mt-12 grid grid-cols-2 gap-3 border-t-4 border-rule pt-4">

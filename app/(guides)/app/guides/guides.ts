@@ -1,13 +1,15 @@
 import type { ComponentType } from "react";
+import type { MDXProps } from "mdx/types";
 
-import Canvas from "./content/canvas";
-import Input from "./content/input";
-import Setup from "./content/setup";
-import Shipping from "./content/shipping";
-import Shrinking from "./content/shrinking";
-import Sound from "./content/sound";
-import Three from "./content/three";
-import Writing from "./content/writing";
+// Guide text lives in content/*.md (plain markdown) or .mdx (when it needs values from code).
+import Canvas from "./content/canvas.md";
+import Input from "./content/input.md";
+import Setup from "./content/setup.md";
+import Shipping from "./content/shipping.mdx";
+import Shrinking from "./content/shrinking.md";
+import Sound from "./content/sound.md";
+import Three from "./content/three.md";
+import Writing from "./content/writing.md";
 
 export type Guide = {
   slug: string;
@@ -16,7 +18,7 @@ export type Guide = {
   badge?: string;
   // Written but not published yet. The page shows "coming soon!" instead of Body.
   soon?: boolean;
-  Body: ComponentType;
+  Body: ComponentType<MDXProps>;
 };
 
 export const GUIDES: Guide[] = [

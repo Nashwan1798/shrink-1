@@ -1,3 +1,4 @@
+import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 
 // srcdoc app frames inherit this CSP: frame-src stops them navigating away; don't add script-src/default-src here (see AppFrame).
@@ -22,4 +23,5 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Guides are .md/.mdx files in app/(guides)/app/guides/content.
+export default createMDX({ extension: /\.mdx?$/ })(nextConfig);

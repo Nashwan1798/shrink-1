@@ -1,10 +1,12 @@
+import type { MDXComponents } from "mdx/types";
 import Link from "next/link";
+import { isValidElement } from "react";
 
 import CopyCode from "./CopyCode";
 
-// Small building blocks so the guide files read like writing, not markup.
+// How the markdown in content/ renders. Each markdown element maps to one of these.
 
-export function H2({ id, children }: { id?: string; children: React.ReactNode }) {
+export function H2({ id, children }: { id?: string; children?: React.ReactNode }) {
   return (
     <h2 id={id} className="mt-10 scroll-mt-6 text-[1.4rem] font-semibold leading-tight tracking-tight first:mt-0">
       {children}
@@ -12,23 +14,23 @@ export function H2({ id, children }: { id?: string; children: React.ReactNode })
   );
 }
 
-export function H3({ children }: { children: React.ReactNode }) {
+export function H3({ children }: { children?: React.ReactNode }) {
   return <h3 className="mt-6 text-[1.1rem] font-semibold tracking-tight">{children}</h3>;
 }
 
-export function P({ children }: { children: React.ReactNode }) {
+export function P({ children }: { children?: React.ReactNode }) {
   return <p className="mt-3 leading-[1.65] text-black/80">{children}</p>;
 }
 
-export function UL({ children }: { children: React.ReactNode }) {
+export function UL({ children }: { children?: React.ReactNode }) {
   return <ul className="mt-3 list-disc space-y-1.5 ps-[1.25em] leading-[1.6] text-black/80 marker:text-black/40">{children}</ul>;
 }
 
-export function OL({ children }: { children: React.ReactNode }) {
+export function OL({ children }: { children?: React.ReactNode }) {
   return <ol className="mt-3 list-decimal space-y-1.5 ps-[1.4em] leading-[1.6] text-black/80 marker:font-mono marker:text-black/40">{children}</ol>;
 }
 
-export function C({ children }: { children: React.ReactNode }) {
+export function C({ children }: { children?: React.ReactNode }) {
   return (
     <code className="rounded-[4px] bg-black/[0.07] px-[0.3em] py-[0.05em] font-mono text-[0.88em] text-black [overflow-wrap:anywhere]">
       {children}
@@ -38,7 +40,7 @@ export function C({ children }: { children: React.ReactNode }) {
 
 const linkClass = "font-medium text-black underline decoration-1 underline-offset-[0.2em] hover:decoration-2";
 
-export function A({ href, children }: { href: string; children: React.ReactNode }) {
+export function A({ href = "", children }: { href?: string; children?: React.ReactNode }) {
   if (!href.startsWith("http")) {
     return (
       <Link href={href} className={linkClass}>
@@ -68,10 +70,29 @@ export function Code({ children, name }: { children: string; name?: string }) {
   );
 }
 
-export function Note({ children }: { children: React.ReactNode }) {
+export function Note({ children }: { children?: React.ReactNode }) {
   return (
     <aside className="mt-4 border-l-4 border-accent bg-accent/10 py-2.5 pr-3 pl-4 leading-[1.6] text-black/80">
       {children}
     </aside>
   );
 }
+
+// A fenced block's info string is its caption, so ```src/index.html gets labelled src/index.html.
+function Pre({ children }: { children?: React.ReactNode }) {
+  if (!isValidElement<{ className?: string; children?: string }>(children)) return <pre>{children}</pre>;
+  const { className, children: text = "" } = children.props;
+  return <Code name={className?.replace(/^language-/, "")}>{text}</Code>;
+}
+
+export const components: MDXComponents = {
+  h2: H2,
+  h3: H3,
+  p: P,
+  ul: UL,
+  ol: OL,
+  a: A,
+  code: C,
+  pre: Pre,
+  blockquote: ({ children }) => <Note>{children}</Note>,
+};
