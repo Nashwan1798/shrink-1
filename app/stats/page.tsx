@@ -3,7 +3,7 @@ import Link from "next/link";
 import { after } from "next/server";
 
 import { BADGE_BY_SLUG, MAX_URI_BYTES, PROGRAM_END, PROGRAM_START, hm } from "@/lib/program";
-import { activityTotals, dailyActivity, daysToRefresh, lastRefreshedAt, perPersonActivity, programDays, refreshActivity } from "@/lib/server/activity";
+import { activityTotals, dailyActivity, daysToRefresh, lastRefreshedAt, programDays, refreshActivity } from "@/lib/server/activity";
 import { currentUser } from "@/lib/server/auth/session";
 import { byteHistogram, dailyCounts, funnel, overview } from "@/lib/server/stats";
 
@@ -35,14 +35,13 @@ export default async function StatsPage() {
   const stale = daysToRefresh(last);
   if (stale.length) after(() => refreshActivity(stale).catch((e) => console.error("[activity] refresh failed", e)));
 
-  const [f, o, act, dau, flow, sizes, people] = await Promise.all([
+  const [f, o, act, dau, flow, sizes] = await Promise.all([
     funnel(),
     overview(),
     activityTotals(days),
     dailyActivity(days),
     dailyCounts(days),
     byteHistogram(),
-    admin ? perPersonActivity(days) : Promise.resolve([]),
   ]);
 
   const steps = [
@@ -213,42 +212,8 @@ export default async function StatsPage() {
         </div>
 
         {admin && (
-          <Section
-            title="people · admin only"
-            sub="Only admins see this block."
-          >
-            <div className="mb-4">
-              <Refresh lastRefreshed={last ? last.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : null} />
-            </div>
-            <Table
-              head={["person", "projects", "SHRINK days", "active days", "SHRINK time", "all time"]}
-              rows={people.map((p) => [
-                p.slackId ? (
-                  <a key={p.userId} href={`https://hackclub.slack.com/team/${p.slackId}`} className="underline decoration-white/30 underline-offset-[0.2em] hover:decoration-accent">
-                    {p.displayName}
-                  </a>
-                ) : (
-                  p.displayName
-                ),
-                <ul key={`${p.userId}-projects`} className="flex flex-col gap-0.5 text-left font-mono text-xs">
-                  {p.projects.map((pr) => (
-                    <li key={pr.project} className={pr.shrink ? "text-accent" : "text-white/45"}>
-                      {pr.shrink ? "✓" : "✗"} {pr.project} <span className="text-white/35">{hm(pr.seconds)}</span>
-                      {pr.offenders.length > 0 && <span className="text-[#ff8f8f]"> {pr.offenders.join(" ")}</span>}
-                    </li>
-                  ))}
-                </ul>,
-                `${p.shrinkDays}/${days.length}`,
-                `${p.activeDays}/${days.length}`,
-                hm(p.shrinkSeconds),
-                hm(p.codingSeconds),
-              ])}
-              empty="No Hackatime rows yet. Hit backfill."
-            />
-            <p className="mt-3 max-w-[70ch] font-mono text-xs text-white/40">
-              A project counts as SHRINK when it has HTML, had no time on Hackatime before Sep 27, and across every day we have read has no
-              files a SHRINK app shouldn&apos;t: images, JSX/TS, other languages. One offender anywhere invalidates the whole project.
-            </p>
+          <Section title="refresh · admin only" sub="Re-read Hackatime. Only admins see this.">
+            <Refresh lastRefreshed={last ? last.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : null} />
           </Section>
         )}
       </main>
