@@ -50,7 +50,7 @@ export async function funnel(): Promise<Funnel> {
       })
       .from(users),
     db
-      .select({ active: sql<number>`(count(distinct ${hackatimeDays.userId}) filter (where ${hackatimeDays.htmlSeconds} > 0))::int` })
+      .select({ active: sql<number>`(count(distinct ${hackatimeDays.userId}) filter (where ${hackatimeDays.shrinkSeconds} > 0))::int` })
       .from(hackatimeDays),
     db
       .select({

@@ -58,15 +58,15 @@ export default async function StatsPage() {
   const hoursData = dau.map((d) => ({
     day: d.day,
     label: dayLabel(d.day),
-    html: d.htmlSeconds,
-    other: Math.max(0, d.codingSeconds - d.htmlSeconds),
+    html: d.shrinkSeconds,
+    other: Math.max(0, d.codingSeconds - d.shrinkSeconds),
   }));
   const flowData = flow.map((d) => ({ day: d.day, label: dayLabel(d.day), signups: d.signups, ships: d.ships, approved: d.approved }));
   const today = dau.at(-1);
   const hero = [
     { k: "signed up", v: n(f.signedUp), sub: `${n(o.onboarded)} finished setup` },
     { k: "building today", v: n(today?.shrink ?? 0), sub: `${n(today?.coding ?? 0)} on Hackatime at all` },
-    { k: "hours on SHRINK", v: (act.htmlSeconds / 3600).toFixed(1), sub: `of ${(act.codingSeconds / 3600).toFixed(1)}h on Hackatime` },
+    { k: "hours on SHRINK", v: (act.shrinkSeconds / 3600).toFixed(1), sub: `of ${(act.codingSeconds / 3600).toFixed(1)}h on Hackatime` },
     { k: "ships", v: n(o.ships.total), sub: `${n(o.ships.approved)} approved · ${n(o.ships.pending)} waiting` },
     { k: "BITES minted", v: n(o.bites.minted), sub: `${n(o.bites.spent)} spent in the shop` },
     { k: "median size", v: o.bytes.median ? `${n(o.bytes.median)}B` : "—", sub: `cap is ${n(MAX_URI_BYTES)} bytes` },
@@ -156,8 +156,8 @@ export default async function StatsPage() {
             <HoursChart data={hoursData} />
             <Facts
               items={[
-                ["SHRINK share of all time", pct(act.htmlSeconds, act.codingSeconds)],
-                ["avg per active SHRINK builder", act.activeShrinkers ? hm(act.htmlSeconds / act.activeShrinkers) : "—"],
+                ["SHRINK share of all time", pct(act.shrinkSeconds, act.codingSeconds)],
+                ["avg per active SHRINK builder", act.activeShrinkers ? hm(act.shrinkSeconds / act.activeShrinkers) : "—"],
                 ["avg per day", dau.length ? hm(act.codingSeconds / dau.length) : "—"],
               ]}
             />
@@ -221,7 +221,7 @@ export default async function StatsPage() {
               <Refresh lastRefreshed={last ? last.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : null} />
             </div>
             <Table
-              head={["person", "SHRINK days", "active days", "SHRINK time", "all time"]}
+              head={["person", "projects", "SHRINK days", "active days", "SHRINK time", "all time"]}
               rows={people.map((p) => [
                 p.slackId ? (
                   <a key={p.userId} href={`https://hackclub.slack.com/team/${p.slackId}`} className="underline decoration-white/30 underline-offset-[0.2em] hover:decoration-accent">
@@ -230,13 +230,25 @@ export default async function StatsPage() {
                 ) : (
                   p.displayName
                 ),
+                <ul key={`${p.userId}-projects`} className="flex flex-col gap-0.5 text-left font-mono text-xs">
+                  {p.projects.map((pr) => (
+                    <li key={pr.project} className={pr.shrink ? "text-accent" : "text-white/45"}>
+                      {pr.shrink ? "✓" : "✗"} {pr.project} <span className="text-white/35">{hm(pr.seconds)}</span>
+                      {pr.offenders.length > 0 && <span className="text-[#ff8f8f]"> {pr.offenders.join(" ")}</span>}
+                    </li>
+                  ))}
+                </ul>,
                 `${p.shrinkDays}/${days.length}`,
                 `${p.activeDays}/${days.length}`,
-                hm(p.htmlSeconds),
+                hm(p.shrinkSeconds),
                 hm(p.codingSeconds),
               ])}
               empty="No Hackatime rows yet. Hit backfill."
             />
+            <p className="mt-3 max-w-[70ch] font-mono text-xs text-white/40">
+              A project counts as SHRINK when it has HTML and, across every day we have read, no files a SHRINK app shouldn&apos;t have:
+              images, JSX/TS, other languages. One offender anywhere invalidates the whole project.
+            </p>
           </Section>
         )}
       </main>

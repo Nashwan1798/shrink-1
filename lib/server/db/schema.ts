@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   index,
   integer,
   jsonb,
@@ -190,8 +191,9 @@ export const scanCache = pgTable("scan_cache", {
   createdAt: now("created_at"),
 });
 
-// One row per person per UTC day of Hackatime activity, refreshed by the cron
-// and the stats page. `htmlSeconds` is the SHRINK signal: time in HTML.
+// One row per person per UTC day of Hackatime activity. `shrinkSeconds` is the
+// time on projects that pass the SHRINK check (see lib/server/activity.ts);
+// it's recomputed from hackatime_projects after every refresh.
 export const hackatimeDays = pgTable(
   "hackatime_days",
   {
@@ -200,12 +202,31 @@ export const hackatimeDays = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     day: text("day").notNull(),
     totalSeconds: integer("total_seconds").notNull().default(0),
-    htmlSeconds: integer("html_seconds").notNull().default(0),
+    shrinkSeconds: integer("html_seconds").notNull().default(0),
     languages: jsonb("languages").$type<{ name: string; seconds: number }[]>().notNull().default([]),
     projects: jsonb("projects").$type<{ name: string; seconds: number }[]>().notNull().default([]),
     fetchedAt: now("fetched_at"),
   },
   (t) => [primaryKey({ columns: [t.userId, t.day] }), index("hackatime_days_day_idx").on(t.day)],
+);
+
+// What each Hackatime project looked like on each day: how long, whether any
+// HTML was touched, and which files or languages a SHRINK app shouldn't have.
+// A project is a SHRINK project only if, over every day we've seen, it has
+// HTML and no offenders.
+export const hackatimeProjects = pgTable(
+  "hackatime_projects",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    day: text("day").notNull(),
+    project: text("project").notNull(),
+    seconds: integer("seconds").notNull().default(0),
+    hasHtml: boolean("has_html").notNull().default(false),
+    offenders: text("offenders").array().notNull().default([]),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day, t.project] }), index("hackatime_projects_user_idx").on(t.userId, t.project)],
 );
 
 export type User = typeof users.$inferSelect;

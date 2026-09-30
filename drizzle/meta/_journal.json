@@ -50,6 +50,13 @@
       "when": 1790797646475,
       "tag": "0006_hackatime_days",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790798840478,
+      "tag": "0007_hackatime_projects",
+      "breakpoints": true
     }
   ]
 }
