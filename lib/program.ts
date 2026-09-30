@@ -1,6 +1,7 @@
 export const MAX_URI_BYTES = 3 * 1024;
 
-export const REPO_URL = /^https:\/\/(www\.)?(github\.com|gitlab\.com|codeberg\.org)\/[\w.-]+\/[\w.-]+(?:[/?#].*)?$/i;
+// Any public git host: a named https host (no IPs, no ports) and an owner/repo path.
+export const REPO_URL = /^https:\/\/(?![\d.]+\/)[a-z\d-]+(?:\.[a-z\d-]+)+\/~?[\w.-]+\/[\w.-]+(?:[/?#].*)?$/i;
 
 export const MIN_SHIP_SECONDS = 30 * 60;
 

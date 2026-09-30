@@ -11,7 +11,7 @@ import Finish from "./Finish";
 const RULES = [
   { t: `one line, ${MAX_URI_BYTES.toLocaleString()} bytes max`, d: "the whole app is a single data:text/html URI." },
   { t: "self-contained", d: "no CDNs, images, fonts or APIs. network requests are blocked when it runs." },
-  { t: "a public repo", d: "on GitHub, GitLab or Codeberg, with a README that describes the app in a few sentences." },
+  { t: "a public repo", d: "on any git host, with a README that describes the app in a few sentences." },
   { t: "readable source", d: "commit the code from before you shrank it, not just the minified line." },
   { t: "tracked hours", d: "at least 30 minutes on Hackatime per ship. a Hackatime project can only count toward one ship." },
 ];

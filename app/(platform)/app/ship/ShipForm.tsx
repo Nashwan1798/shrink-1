@@ -89,7 +89,7 @@ export default function ShipForm({
       : !sourceUrl.trim()
         ? "add a link to the repo"
         : !sourceOk
-          ? "link a GitHub, GitLab or Codeberg repo"
+          ? "link the repo itself, like github.com/you/project"
         : null;
 
   const picked = (hackatime ?? []).filter((p) => selected.has(p.name));

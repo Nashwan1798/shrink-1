@@ -69,7 +69,7 @@ type Source =
   | { kind: "github"; url: string; sha: string | null; readme: string | null; files: { path: string; size: number }[]; excerpts: { path: string; text: string }[] };
 
 const CODE_EXT = /\.(html?|m?js|jsx|ts|tsx|css|svg|glsl|frag|vert|py|sh)$/i;
-const SEGMENT = /^(?!\.{1,2}$)[\w.-]+$/;
+const SEGMENT = /^(?!~?\.{1,2}$)~?[\w.-]+$/;
 const SKIP_DIR = /(^|\/)(node_modules|dist|build|\.git|vendor)\//;
 
 const ACCEPT = { json: "application/vnd.github+json", raw: "application/vnd.github.raw+json", sha: "application/vnd.github.sha" };
@@ -157,7 +157,7 @@ export function repoKey(url: string): string | null {
 
 function readSource(url: string): Promise<Source> {
   return remember(`src:${url}`, async () => {
-    if (!REPO_URL.test(url)) return { kind: "missing", why: "The source link has to be a GitHub, GitLab or Codeberg repo." };
+    if (!REPO_URL.test(url)) return { kind: "missing", why: "The source link has to be a public git repo, like github.com/you/project." };
     const parsed = parseRepo(url);
     if (!parsed) return { kind: "missing", why: "Link the repo itself, like github.com/you/project." };
     const { host, owner, repo } = parsed;
@@ -335,13 +335,13 @@ export async function quickScan(user: User, input: ScanInput): Promise<Check[]> 
 
   const src = await readSource(input.sourceUrl.trim()).catch(() => null);
   if (!src) {
-    out.push(check("repo", "skip", "GitHub didn't answer. A reviewer will open it by hand."));
+    out.push(check("repo", "skip", "The repo host didn't answer. A reviewer will open it by hand."));
     out.push(check("readme", "skip"));
   } else if (src.kind === "missing") {
     out.push(check("repo", "fail", src.why));
     out.push(check("readme", "skip"));
   } else if (src.kind === "elsewhere") {
-    out.push(check("repo", "warn", "It's public, but we can only read GitHub repos. A reviewer will check it by hand."));
+    out.push(check("repo", "warn", "It loads, but we can only auto-check GitHub repos. A reviewer will check it by hand."));
     out.push(check("readme", "skip"));
   } else {
     out.push(check("repo", "pass"));

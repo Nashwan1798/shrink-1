@@ -55,7 +55,7 @@ export async function createShip(user: User, input: ShipInput): Promise<Ship> {
   const dataUri = validateUri(input.dataUri);
   const sourceUrl = input.sourceUrl.trim();
   if (!sourceUrl) throw new ShipError("Add a link to the source repo.");
-  if (!REPO_URL.test(sourceUrl)) throw new ShipError("The source link has to be a GitHub, GitLab or Codeberg repo.");
+  if (!REPO_URL.test(sourceUrl)) throw new ShipError("The source link has to be a public git repo, like github.com/you/project.");
 
   const projects = [...new Set(input.hackatimeProjects.map((p) => p.trim()).filter(Boolean))];
   if (projects.length === 0) throw new ShipError("Pick the Hackatime project(s) you built this in.");
