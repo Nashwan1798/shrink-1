@@ -5,7 +5,7 @@ Welcome to SHRINK! You might wonder... How the helly do i write these Data URIs?
 1. An editor. I'd personally recommend [VS Code](https://code.visualstudio.com) if you're getting started.
 2. [Hackatime](https://hackatime.hackclub.com). That's how we track how long you code! You get 1 BITEs per hour.
 3. [Node.js](https://nodejs.org), which comes with `npm`. The purpose is that it runs the build script.
-4. [git](https://git-scm.com), and a [GitHub](https://github.com) (or whatever git host you use) account.
+4. [git](https://git-scm.com), and an account on any git host you like (GitHub, GitLab, Codeberg, a self-hosted one, whatever!).
 
 ## 2. make the folder
 
@@ -100,16 +100,22 @@ node build.mjs
 
 It prints how many bytes you've used (the test file is around 200) and makes a `dist` folder. It exports to `dist/uri.txt`, which is your app as one line in Data URI, which is what you paste into the ship form! You can check it out by pasting the URI link in your browser.
 
-## 5. put it on GitHub (or whatever git provider you use)
+## 5. put it online
 
-On GitHub, click + in the top right, then New repository. Make it **Public**, since ships need a public repo :D In the terminal, you run:
+On your git host, make a new **empty** repo. Make it **Public**, since ships need a public repo :D Then in the terminal, you run:
 
 ```terminal
 git add .
 git commit -m "first commit!"
 ```
 
-GitHub's page for the new repo shows a box called "…or push an existing repository from the command line". Copy those three lines and run them. (the one that ends with `git push`)
+Your host gives the new repo a URL (it usually ends in `.git`). Copy it, and run these with your URL in place of the placeholder:
+
+```terminal
+git remote add origin https://your-git-host.com/you/my-app.git
+git branch -M main
+git push -u origin main
+```
 
 To commit:
 

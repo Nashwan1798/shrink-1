@@ -55,7 +55,7 @@ export type ScanResult = { checks: Check[] } | { limited: string };
 
 const SCANS_PER_WINDOW = 30;
 const SCAN_WINDOW_MS = 30 * 60_000;
-// Scanning a repo costs GitHub calls and an LLM run; a real participant works
+// Scanning a repo costs host API calls and an LLM run; a real participant works
 // on a handful at most, so cap distinct repos rather than scans.
 const REPOS_PER_DAY = 10;
 const DAY_MS = 24 * 60 * 60_000;
