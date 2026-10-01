@@ -6,10 +6,15 @@ import { requireUser } from "@/lib/server/auth/current";
 import { HCA_ADDRESSES_URL, HCA_VERIFY_URL } from "@/lib/server/auth/hca";
 import { fetchProjects } from "@/lib/server/hackatime";
 import { addressesFor } from "@/lib/server/orders";
+import { requestOrigin } from "@/lib/server/origin";
+import { referralsOf } from "@/lib/server/referrals";
 import { shipsOf } from "@/lib/server/ships";
 import { EXAMPLES } from "@/lib/examples";
 
 import ProjectCard from "@/app/components/ProjectCard";
+
+import CopyLink from "./invite/CopyLink";
+import { BITE_LABEL } from "./invite/rules";
 
 function daysUntil(date: string): number {
   return Math.max(0, Math.ceil((new Date(date).getTime() - Date.now()) / 86_400_000));
@@ -25,10 +30,12 @@ type Step = { label: string; done: boolean | null; hint: string; href: string | 
 
 export default async function Home() {
   const user = await requireUser("/app");
-  const [ships, projects, addresses] = await Promise.all([
+  const [ships, projects, addresses, referrals, origin] = await Promise.all([
     shipsOf(user.id),
     fetchProjects(user.id).catch(() => null),
     addressesFor(user).catch(() => "reconnect" as const),
+    user.referralCode ? referralsOf(user) : null,
+    requestOrigin(),
   ]);
 
   const started = hasStarted();
@@ -157,7 +164,36 @@ export default async function Home() {
         </section>
       )}
 
-      <section className={`${todo.length > 0 || ships.length > 0 ? "mt-[clamp(1.5rem,3vw,56px)] " : ""}border-t-4 border-rule pt-4`}>
+      {!user.referralRevokedAt && (
+        <section className={`${todo.length > 0 || ships.length > 0 ? "mt-[clamp(1.5rem,3vw,56px)] " : ""}border-t-4 border-rule pt-4`}>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 className="text-[1.25rem] font-semibold tracking-tight">invite friends</h2>
+            <Link
+              href="/app/invite"
+              className="text-sm font-semibold underline decoration-1 underline-offset-[0.25em] hover:decoration-2"
+            >
+              {referrals ? "who's joined →" : "read the rules →"}
+            </Link>
+          </div>
+          {referrals ? (
+            <div className="mt-3 grid grid-cols-1 items-center gap-x-[clamp(1.5rem,3vw,56px)] gap-y-3 md:grid-cols-[minmax(0,1fr)_auto]">
+              <CopyLink url={`${origin}/r/${user.referralCode}`} className="max-w-[560px]" />
+              <p className="text-sm font-medium text-black/60">
+                <span className="font-pixel text-[1.1rem] text-black">{referrals.people.length}</span> signed up ·{" "}
+                <span className="font-pixel text-[1.1rem] text-black">{referrals.people.filter((p) => p.status !== "joined").length}</span>{" "}
+                shipped · <span className="font-pixel text-[1.1rem] text-black">{referrals.earned}</span> BITES earned
+              </p>
+            </div>
+          ) : (
+            <p className="mt-2 max-w-[60ch] font-medium leading-snug text-black/60">
+              get {BITE_LABEL} for each friend who&apos;s new to SHRINK, signs up with your link, and gets a ship approved. people you know
+              only, never Slack channels.
+            </p>
+          )}
+        </section>
+      )}
+
+      <section className="mt-[clamp(1.5rem,3vw,56px)] border-t-4 border-rule pt-4">
         <h2 className="text-[1.25rem] font-semibold tracking-tight">
           examples
         </h2>

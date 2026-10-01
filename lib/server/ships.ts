@@ -10,6 +10,7 @@ import { ships, users, type Ship, type User } from "./db/schema";
 import { fetchSeconds } from "./hackatime";
 import { fullScan } from "./scan";
 import * as ledger from "./ledger";
+import { payReferral } from "./referrals";
 
 export class ShipError extends Error {}
 
@@ -165,6 +166,7 @@ export async function decide(reviewer: User, shipId: string, decision: Decision)
       idempotencyKey: `ship:${ship.id}:award`,
       actorId: reviewer.id,
     });
+    await payReferral(tx, ship.userId, reviewer.id);
     return updated;
   });
 }

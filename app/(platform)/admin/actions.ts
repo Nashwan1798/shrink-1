@@ -12,6 +12,7 @@ import { backfillProgramChannel, loadOrderAndUser, orderHandled, readAddress } f
 import * as ledger from "@/lib/server/ledger";
 import { OrderError, handleOrder } from "@/lib/server/orders";
 import { requestOrigin } from "@/lib/server/origin";
+import { setRevoked } from "@/lib/server/referrals";
 import { env } from "@/lib/server/env";
 
 export type AdminState = { error: string | null; ok?: string | null; address?: Record<string, string | null> | null };
@@ -53,6 +54,14 @@ export async function adjustAction(_prev: AdminState, form: FormData): Promise<A
   queueSync({ users: [userId] });
   revalidatePath("/admin");
   return { error: null, ok: `${amount > 0 ? "+" : ""}${amount} BITES posted.` };
+}
+
+export async function referralLinkAction(_prev: AdminState, form: FormData): Promise<AdminState> {
+  const admin = await actionRole("admin");
+  const revoke = str(form, "revoke") === "1";
+  await setRevoked(admin, str(form, "user_id"), revoke);
+  revalidatePath("/admin");
+  return { error: null, ok: revoke ? "Link pulled. Take back referral BITES with ± BITES if they were spammed." : "Link restored." };
 }
 
 export async function orderHandleAction(_prev: AdminState, form: FormData): Promise<AdminState> {

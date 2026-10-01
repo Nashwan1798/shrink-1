@@ -8,6 +8,7 @@ import { createSession } from "@/lib/server/auth/session";
 import { safeEqual } from "@/lib/server/crypto";
 import { db } from "@/lib/server/db/client";
 import { oauthStates } from "@/lib/server/db/schema";
+import { REF_COOKIE, referrerFor } from "@/lib/server/referrals";
 import { upsertFromSignIn } from "@/lib/server/users";
 
 // The state row is consumed atomically so a replayed callback does nothing.
@@ -36,7 +37,9 @@ export async function GET(req: NextRequest) {
   try {
     const tokens = await exchangeCode({ origin, code, codeVerifier: row.codeVerifier });
     const identity = await fetchIdentity(tokens.access_token);
-    const user = await upsertFromSignIn(identity, tokens);
+    const referrerId = await referrerFor(jar.get(REF_COOKIE)?.value);
+    const user = await upsertFromSignIn(identity, tokens, referrerId);
+    jar.delete(REF_COOKIE);
     await createSession(user.id);
     return finishAuth(req, row.redirectTo ?? "/app");
   } catch (e) {

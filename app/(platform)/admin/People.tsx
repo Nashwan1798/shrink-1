@@ -5,7 +5,7 @@ import { useActionState, useState } from "react";
 import PixelButton from "@/app/components/PixelButton";
 import { Notice } from "@/app/components/ui/bits";
 
-import { adjustAction, setRoleAction, type AdminState } from "./actions";
+import { adjustAction, referralLinkAction, setRoleAction, type AdminState } from "./actions";
 
 type Person = {
   id: string;
@@ -18,11 +18,15 @@ type Person = {
   createdAt: string;
   bites: number;
   shipCount: number;
+  hasLink: boolean;
+  linkRevoked: boolean;
+  referred: number;
 };
 
 export default function People({ people, selfId }: { people: Person[]; selfId: string }) {
   const [q, setQ] = useState("");
   const [roleState, roleAction] = useActionState<AdminState, FormData>(setRoleAction, { error: null });
+  const [linkState, linkAction] = useActionState<AdminState, FormData>(referralLinkAction, { error: null });
   const [adjState, adjAction, adjPending] = useActionState<AdminState, FormData>(adjustAction, { error: null });
   const [adjusting, setAdjusting] = useState<Person | null>(null);
 
@@ -35,6 +39,7 @@ export default function People({ people, selfId }: { people: Person[]; selfId: s
     <div className="flex flex-col gap-4">
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="search name, email, slack id" className="input max-w-md font-mono text-sm" />
       {(roleState.error || roleState.ok) && <Notice kind={roleState.error ? "error" : "ok"}>{roleState.error ?? roleState.ok}</Notice>}
+      {(linkState.error || linkState.ok) && <Notice kind={linkState.error ? "error" : "ok"}>{linkState.error ?? linkState.ok}</Notice>}
 
       <div className="card overflow-x-auto bg-white">
         <table className="w-full text-sm">
@@ -44,6 +49,7 @@ export default function People({ people, selfId }: { people: Person[]; selfId: s
               <th className="px-3 py-2 font-normal">eligibility</th>
               <th className="px-3 py-2 text-right font-normal">ships</th>
               <th className="px-3 py-2 text-right font-normal">BITES</th>
+              <th className="px-3 py-2 text-right font-normal">invited</th>
               <th className="px-3 py-2 font-normal">role</th>
               <th className="px-3 py-2 font-normal"></th>
             </tr>
@@ -64,6 +70,24 @@ export default function People({ people, selfId }: { people: Person[]; selfId: s
                 )}
                 <td className="px-3 py-2 text-right font-mono">{p.shipCount}</td>
                 <td className="px-3 py-2 text-right font-pixel">{p.bites}</td>
+                <td className="px-3 py-2 text-right">
+                  {p.hasLink || p.linkRevoked ? (
+                    <form action={linkAction} className="flex items-center justify-end gap-2">
+                      <input type="hidden" name="user_id" value={p.id} />
+                      <input type="hidden" name="revoke" value={p.linkRevoked ? "0" : "1"} />
+                      <span className={`font-mono ${p.linkRevoked ? "text-[#c1121f] line-through" : ""}`}>{p.referred}</span>
+                      <button
+                        type="submit"
+                        className="text-xs font-medium underline decoration-1 underline-offset-[0.2em] hover:decoration-2"
+                        title={p.linkRevoked ? "Turn their invite link back on" : "Turn off their invite link for spamming"}
+                      >
+                        {p.linkRevoked ? "restore" : "pull link"}
+                      </button>
+                    </form>
+                  ) : (
+                    <span className="font-mono text-xs text-black/30">no link</span>
+                  )}
+                </td>
                 <td className="px-3 py-2">
                   {p.id === selfId ? (
                     <span className="font-mono text-xs">{p.role} (you)</span>

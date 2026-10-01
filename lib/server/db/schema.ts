@@ -48,6 +48,12 @@ export const users = pgTable(
     hackatimeTokenEncrypted: text("hackatime_token_encrypted"),
     hackatimeLinkedAt: timestamp("hackatime_linked_at", { withTimezone: true }),
     onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
+    // Null until they type out the no-spam pledge on /app/invite.
+    referralCode: text("referral_code"),
+    // Set only when the row is created from a sign-in that came through someone's link.
+    referredById: text("referred_by_id"),
+    // An admin pulled their link for spamming: it stops working and pays nothing more.
+    referralRevokedAt: timestamp("referral_revoked_at", { withTimezone: true }),
     createdAt: now("created_at"),
     lastSeenAt: now("last_seen_at"),
   },
@@ -55,6 +61,8 @@ export const users = pgTable(
     uniqueIndex("users_hca_subject_idx").on(t.hcaSubject),
     index("users_email_idx").on(t.email),
     uniqueIndex("users_hackatime_account_idx").on(t.hackatimeAccountId),
+    uniqueIndex("users_referral_code_idx").on(t.referralCode),
+    index("users_referred_by_idx").on(t.referredById),
   ],
 );
 

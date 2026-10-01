@@ -18,6 +18,7 @@ export default function Shell({ user, bites, hasOrders, children }: Props) {
         { href: "/app/ship", label: "ship" },
         { href: "/app/guides", label: "guides" },
         { href: "/app/shop", label: "shop" },
+        { href: "/app/invite", label: "invite" },
       ]
     : [{ href: "/app/guides", label: "guides" }];
   if (hasOrders) links.push({ href: "/app/orders", label: "orders" });

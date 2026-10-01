@@ -86,3 +86,14 @@ export function hm(seconds: number): string {
   if (h === 0) return `${m}m`;
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
+
+// Paid to the referrer once, when the person they brought in gets their first ship approved.
+export const REFERRAL_BITES = 1;
+
+export const REFERRAL_PLEDGE = "i will only send my link to people i know and never post it in Slack";
+
+// Case, spacing, curly quotes and a trailing full stop don't matter.
+export function pledgeMatches(typed: string): boolean {
+  const norm = (s: string) => s.toLowerCase().replace(/[’‘]/g, "'").replace(/\s+/g, " ").trim().replace(/\.$/, "");
+  return norm(typed) === norm(REFERRAL_PLEDGE);
+}

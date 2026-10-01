@@ -10,6 +10,10 @@ import AirtableSync from "./AirtableSync";
 import People from "./People";
 import SlackBackfill from "./SlackBackfill";
 
+// Drizzle leaves columns unqualified in a single-table select, so a correlated
+// subquery has to name the outer row itself.
+const outerId = sql.raw(`"users"."id"`);
+
 export default async function AdminPage() {
   const admin = await requireRole("admin", "/admin");
 
@@ -24,8 +28,11 @@ export default async function AdminPage() {
         eligibility: users.eligibility,
         signedIn: sql<boolean>`${users.hcaSubject} is not null`,
         createdAt: users.createdAt,
-        bites: sql<number>`coalesce((select sum(${ledgerEntries.amount}) from ${ledgerEntries} where ${ledgerEntries.userId} = ${users.id}), 0)::int`,
-        shipCount: sql<number>`(select count(*) from ${ships} where ${ships.userId} = ${users.id})::int`,
+        bites: sql<number>`coalesce((select sum(l.amount) from ${ledgerEntries} l where l.user_id = ${outerId}), 0)::int`,
+        shipCount: sql<number>`(select count(*) from ${ships} s where s.user_id = ${outerId})::int`,
+        hasLink: sql<boolean>`${users.referralCode} is not null`,
+        linkRevoked: sql<boolean>`${users.referralRevokedAt} is not null`,
+        referred: sql<number>`(select count(*) from ${users} r where r.referred_by_id = ${outerId})::int`,
       })
       .from(users)
       .orderBy(desc(users.createdAt)),

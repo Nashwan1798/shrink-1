@@ -11,7 +11,9 @@ import { checkIdentity, deriveEligibility, type Identity, type Tokens } from "./
 
 export const tokenBinding = (userId: string) => `users/${userId}/hca_token`;
 
-export async function upsertFromSignIn(identity: Identity, tokens: Tokens): Promise<User> {
+// `referrerId` only sticks to a brand-new row: anyone already in SHRINK, even
+// just from the Slack join button, isn't a new person to refer.
+export async function upsertFromSignIn(identity: Identity, tokens: Tokens, referrerId: string | null = null): Promise<User> {
   const check = await checkIdentity(identity.sub);
   const eligibility = deriveEligibility(identity.verificationStatus, check);
   const bootstrapAdmin =
@@ -60,7 +62,7 @@ export async function upsertFromSignIn(identity: Identity, tokens: Tokens): Prom
 
   const [created] = await db
     .insert(users)
-    .values({ ...base, hcaSubject: identity.sub, role: bootstrapAdmin ? "admin" : "participant" })
+    .values({ ...base, hcaSubject: identity.sub, role: bootstrapAdmin ? "admin" : "participant", referredById: referrerId })
     .returning();
   const [row] = await db
     .update(users)

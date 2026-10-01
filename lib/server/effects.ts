@@ -6,8 +6,9 @@ import { hm } from "@/lib/program";
 
 import { decryptJson } from "./crypto";
 import { db } from "./db/client";
-import { orders, ships, users, type Order, type Ship, type User } from "./db/schema";
+import { ledgerEntries, orders, ships, users, type Order, type Ship, type User } from "./db/schema";
 import { env } from "./env";
+import { referralKey } from "./referrals";
 import type { Address } from "./auth/hca";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -58,6 +59,7 @@ export async function shipDecided(ship: Ship, author: User, origin: string) {
         }spend them at ${origin}/app/shop`,
       ),
     ]);
+    await referralPaid(author, ship, origin);
   } else if (ship.state === "rejected") {
     await Promise.all([
       channel(`${who(author)}'s ${link} was sent back.`),
@@ -69,6 +71,22 @@ export async function shipDecided(ship: Ship, author: User, origin: string) {
       ),
     ]);
   }
+}
+
+// Only tells the referrer if this approval is the one that paid them.
+async function referralPaid(author: User, ship: Ship, origin: string) {
+  if (!author.referredById) return;
+  const [row] = await db
+    .select({ amount: ledgerEntries.amount, at: ledgerEntries.createdAt, referrer: users })
+    .from(ledgerEntries)
+    .innerJoin(users, eq(ledgerEntries.userId, users.id))
+    .where(eq(ledgerEntries.idempotencyKey, referralKey(author.id)))
+    .limit(1);
+  if (!row || !ship.reviewedAt || Math.abs(row.at.getTime() - ship.reviewedAt.getTime()) > 60_000) return;
+  await dm(
+    row.referrer,
+    `${esc(author.displayName)} signed up with your link and just got *${esc(ship.title)}* approved, so you get *${row.amount} BITE${row.amount === 1 ? "" : "S"}*. thanks for bringing them in!\n${origin}/app/invite`,
+  );
 }
 
 export async function orderPlaced(order: Order, user: User, origin: string) {
