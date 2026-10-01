@@ -38,7 +38,7 @@ export default async function Invite() {
     return (
       <div className="max-w-[720px]">
         <H1 sub={sub}>invite friends</H1>
-        <Panel title="read these first">
+        <Panel title="READ ME!!">
           <Rules />
         </Panel>
         <div className="mt-6">
@@ -60,7 +60,7 @@ export default async function Invite() {
           <section className="border-t-4 border-rule pt-4">
             <h2 className="text-[1.25rem] font-semibold tracking-tight">your link</h2>
             <CopyLink url={url} className="mt-3" />
-            <p className="mt-2 text-sm font-medium text-black/50">send it to people you know. never post it in Slack.</p>
+            <p className="mt-2 text-sm font-medium text-black/50">only to people you know. no spam!</p>
           </section>
 
           <section className="border-t-4 border-rule pt-4">
@@ -109,7 +109,7 @@ export default async function Invite() {
         </div>
 
         <aside className="self-start">
-          <Panel title="the rules">
+          <Panel title="READ ME!!">
             <Rules compact />
           </Panel>
         </aside>

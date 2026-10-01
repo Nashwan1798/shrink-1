@@ -35,7 +35,7 @@ export default function GetLink() {
       >
         <header className="sticky top-0 z-10 flex items-center justify-between gap-4 bg-ink px-4 py-2.5 text-white">
           <h2 id="get-link-title" className="font-pixel text-[1.1rem] leading-none">
-            read these first
+            READ ME!!
           </h2>
           <button
             type="button"

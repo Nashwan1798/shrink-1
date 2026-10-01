@@ -90,7 +90,7 @@ export function hm(seconds: number): string {
 // Paid to the referrer once, when the person they brought in gets their first ship approved.
 export const REFERRAL_BITES = 1;
 
-export const REFERRAL_PLEDGE = "i will only send my link to people i know and never post it in Slack";
+export const REFERRAL_PLEDGE = "i will only send my link to people i know and i will not spam it";
 
 // Case, spacing, curly quotes and a trailing full stop don't matter.
 export function pledgeMatches(typed: string): boolean {
