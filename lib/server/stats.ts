@@ -2,6 +2,8 @@ import "server-only";
 
 import { sql } from "drizzle-orm";
 
+import { TZ, dayEnd, dayStart } from "@/lib/tz";
+
 import { db } from "./db/client";
 import { hackatimeDays, ledgerEntries, orders, ships, users } from "./db/schema";
 
@@ -164,12 +166,12 @@ export async function overview(): Promise<Overview> {
 
 export type DayCounts = { day: string; signups: number; onboarded: number; ships: number; approved: number };
 
-// Per UTC day over `days`: new sign-ins, finished onboardings, ships, approvals.
+// Per Vermont day over `days`: new sign-ins, finished onboardings, ships, approvals.
 export async function dailyCounts(days: string[]): Promise<DayCounts[]> {
   if (days.length === 0) return [];
-  const from = `${days[0]}T00:00:00Z`;
-  const to = `${days[days.length - 1]}T23:59:59.999Z`;
-  const dayOf = (col: unknown) => sql<string>`to_char(${col} at time zone 'UTC', 'YYYY-MM-DD')`;
+  const from = dayStart(days[0]).toISOString();
+  const to = dayEnd(days[days.length - 1]).toISOString();
+  const dayOf = (col: unknown) => sql<string>`to_char(${col} at time zone ${TZ}, 'YYYY-MM-DD')`;
   const [signups, onboarded, shipped, approved] = await Promise.all([
     db
       .select({ day: dayOf(users.createdAt), n: sql<number>`count(*)::int` })

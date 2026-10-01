@@ -6,6 +6,7 @@ import { BADGE_BY_SLUG, MAX_URI_BYTES, PROGRAM_END, PROGRAM_START, hm } from "@/
 import { activityTotals, dailyActivity, daysToRefresh, lastRefreshedAt, programDays, refreshActivity } from "@/lib/server/activity";
 import { currentUser } from "@/lib/server/auth/session";
 import { byteHistogram, dailyCounts, funnel, overview } from "@/lib/server/stats";
+import { TZ } from "@/lib/tz";
 
 import { DauChart, FlowChart, Funnel, Glow, HoursChart, SizeChart } from "./Charts";
 import Refresh from "./Refresh";
@@ -19,10 +20,13 @@ export const metadata: Metadata = {
 
 const n = (v: number) => v.toLocaleString("en-US");
 const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : "—");
+// Day strings are calendar dates, so UTC noon renders the same date everywhere.
 const dayLabel = (day: string) =>
-  new Date(`${day}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 const fmtDate = (s: string) =>
-  new Date(`${s}T00:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
+  new Date(`${s}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
+const stamp = (d: Date) =>
+  d.toLocaleString("en-US", { timeZone: TZ, month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
 
 export default async function StatsPage() {
   const user = await currentUser();
@@ -95,7 +99,7 @@ export default async function StatsPage() {
         </Link>
         <span className="font-pixel text-[1.05rem] text-accent">stats</span>
         <span className="hidden font-mono text-xs text-white/45 sm:inline">
-          {fmtDate(PROGRAM_START)} → {fmtDate(PROGRAM_END)} · UTC days
+          {fmtDate(PROGRAM_START)} → {fmtDate(PROGRAM_END)} · Vermont time
         </span>
         <nav className="ml-auto flex items-center gap-4 text-[0.95rem] font-medium text-white/60">
           <Link href="/app" className="hover:text-white">
@@ -213,13 +217,13 @@ export default async function StatsPage() {
 
         {admin && (
           <Section title="refresh · admin only" sub="Re-read Hackatime. Only admins see this.">
-            <Refresh lastRefreshed={last ? last.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : null} />
+            <Refresh lastRefreshed={last ? stamp(last) : null} />
           </Section>
         )}
       </main>
       <footer className="flex flex-wrap items-center justify-between gap-2 px-[var(--gutter)] pb-6 font-mono text-xs text-white/35">
         <span>made with &lt;3 by teens in Hack Club</span>
-        <span>{last ? `hackatime snapshot ${last.toISOString().slice(0, 16).replace("T", " ")} UTC` : "hackatime snapshot pending"}</span>
+        <span>{last ? `hackatime snapshot ${stamp(last)}` : "hackatime snapshot pending"}</span>
       </footer>
     </div>
   );

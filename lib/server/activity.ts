@@ -3,6 +3,7 @@ import "server-only";
 import { and, gte, isNotNull, lte, sql } from "drizzle-orm";
 
 import { PROGRAM_START } from "@/lib/program";
+import { dayEnd, dayStart, localDay, nextDay, prevDay } from "@/lib/tz";
 
 import { decrypt } from "./crypto";
 import { db } from "./db/client";
@@ -10,7 +11,8 @@ import { hackatimeDays, hackatimeProjectHistory, hackatimeProjects, users } from
 import { env, staging } from "./env";
 import { hackatimeTokenBinding } from "./hackatime";
 
-// Hackatime activity, one row per person per UTC day, built from raw heartbeats.
+// Hackatime activity, one row per person per Vermont day (America/New_York),
+// built from raw heartbeats.
 //
 // SHRINK detection is per project, not per file: a SHRINK app is a single HTML
 // file plus at most a README and a build script, so a Hackatime project counts
@@ -41,20 +43,19 @@ const HTML = /^html?$/;
 
 type Slice = { name: string; seconds: number };
 
-export const utcDay = (d: Date) => d.toISOString().slice(0, 10);
-
+// Every Vermont day from the program start through today, oldest first.
 export function programDays(until = new Date()): string[] {
   const out: string[] = [];
-  const start = new Date(`${PROGRAM_START}T00:00:00Z`);
-  const end = new Date(`${utcDay(until)}T00:00:00Z`);
-  for (let d = start; d <= end; d = new Date(d.getTime() + 86_400_000)) out.push(utcDay(d));
+  const end = localDay(until);
+  for (let d = PROGRAM_START; d <= end; d = nextDay(d)) out.push(d);
   return out;
 }
 
-// The last `n` UTC days ending today, oldest first.
+// The last `n` Vermont days ending today, oldest first.
 export function recentDays(n: number, until = new Date()): string[] {
-  const end = new Date(`${utcDay(until)}T00:00:00Z`);
-  return Array.from({ length: n }, (_, i) => utcDay(new Date(end.getTime() - (n - 1 - i) * 86_400_000)));
+  const out: string[] = [];
+  for (let d = localDay(until), i = 0; i < n; d = prevDay(d), i++) out.unshift(d);
+  return out;
 }
 
 // ---- heartbeats → one day ---------------------------------------------------------------------
@@ -120,11 +121,11 @@ export function summarise(list: Heartbeat[]): DayStats {
   };
 }
 
-// The endpoint is inclusive on both ends, so stop a second before midnight.
+// One Vermont day. The endpoint is inclusive on both ends, so stop a second before midnight.
 async function fetchDay(token: string, day: string): Promise<DayStats | null> {
   const url = new URL(`${env.HACKATIME_HOST}${HEARTBEATS_PATH}`);
-  url.searchParams.set("start_time", `${day}T00:00:00Z`);
-  url.searchParams.set("end_time", `${day}T23:59:59Z`);
+  url.searchParams.set("start_time", dayStart(day).toISOString());
+  url.searchParams.set("end_time", dayEnd(day).toISOString());
   const res = await fetch(url, {
     headers: { authorization: `Bearer ${token}`, accept: "application/json" },
     cache: "no-store",
@@ -145,7 +146,7 @@ async function fetchBeforeCutoff(token: string, project: string): Promise<number
   const url = new URL(`${env.HACKATIME_HOST}${STATS_PATH}`);
   url.searchParams.set("filter_by_project", project);
   url.searchParams.set("start_date", "2000-01-01T00:00:00Z");
-  url.searchParams.set("end_date", `${PROJECT_CUTOFF}T00:00:00Z`);
+  url.searchParams.set("end_date", dayStart(PROJECT_CUTOFF).toISOString());
   url.searchParams.set("total_seconds", "true");
   const res = await fetch(url, {
     headers: { authorization: `Bearer ${token}`, accept: "application/json" },
@@ -163,7 +164,7 @@ async function fetchBeforeCutoff(token: string, project: string): Promise<number
 function fakeDay(userId: string, day: string): DayStats {
   let h = 0;
   for (const c of `${userId}:${day}`) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  const base = new Date(`${day}T15:00:00Z`).getTime() / 1000;
+  const base = dayStart(day).getTime() / 1000 + 11 * 3600; // 11am Vermont
   const beats: Heartbeat[] = [];
   const add = (n: number, project: string, entity: string, language: string) => {
     for (let i = 0; i < n; i++) beats.push({ time: base + beats.length * 45, project, entity, language, type: "file" });

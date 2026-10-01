@@ -4,7 +4,7 @@ import { env } from "@/lib/server/env";
 
 export const maxDuration = 300;
 
-// Re-reads today and yesterday (UTC) from Hackatime for everyone. Pass
+// Re-reads today and yesterday (Vermont time) from Hackatime for everyone. Pass
 // ?days=N to backfill further, e.g. once after deploying.
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization") ?? "";

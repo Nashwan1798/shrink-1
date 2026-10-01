@@ -191,7 +191,7 @@ export const scanCache = pgTable("scan_cache", {
   createdAt: now("created_at"),
 });
 
-// One row per person per UTC day of Hackatime activity. `shrinkSeconds` is the
+// One row per person per Vermont day of Hackatime activity. `shrinkSeconds` is the
 // time on projects that pass the SHRINK check (see lib/server/activity.ts);
 // it's recomputed from hackatime_projects after every refresh.
 export const hackatimeDays = pgTable(
