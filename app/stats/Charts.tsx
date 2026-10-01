@@ -103,24 +103,6 @@ export function FlowChart({ data }: { data: FlowPoint[] }) {
   );
 }
 
-// ---- ship sizes -------------------------------------------------------------------------------
-
-const SIZES: ChartConfig = { count: { label: "ships", color: "purple" } };
-
-export function SizeChart({ data }: { data: { label: string; count: number }[] }) {
-  return (
-    <Frame className="h-48">
-      <BarChart data={data} config={SIZES} bloom="low" margins={{ left: 24 }}>
-        <Grid />
-        <XAxis dataKey="label" maxTicks={6} />
-        <YAxis tickFormatter={whole} tickCount={3} />
-        <Bar dataKey="count" variant="gradient" />
-        <Tooltip labelKey="label" valueFormatter={(v) => `${int(v)} ships`} variant="frosted-glass" />
-      </BarChart>
-    </Frame>
-  );
-}
-
 // ---- decoration -------------------------------------------------------------------------------
 
 export function Glow({ color = "orange", className = "" }: { color?: DitherColor; className?: string }) {

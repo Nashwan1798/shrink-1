@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import { TZ, dayEnd, dayStart } from "@/lib/tz";
 
 import { db } from "./db/client";
-import { hackatimeDays, ledgerEntries, orders, ships, users } from "./db/schema";
+import { hackatimeDays, ships, users } from "./db/schema";
 import { siteVisitors } from "./vercel-analytics";
 
 // Everything here is aggregate: the stats page is public, so nothing in this
@@ -32,13 +32,16 @@ export type Overview = {
   hackatimeLinked: number;
   eligible: number;
   ships: { total: number; pending: number; approved: number; rejected: number; reships: number };
-  seconds: { claimed: number; awarded: number };
-  bytes: { median: number; min: number; max: number; mean: number };
-  bites: { minted: number; spent: number; refunded: number; adjusted: number };
-  orders: { placed: number; fulfilled: number; rejected: number };
+  seconds: { claimed: number; awarded: number; avgApproved: number | null };
   badges: { slug: string; claimed: number; awarded: number }[];
-  rewards: { name: string; count: number }[];
   reviewMedianMinutes: number | null;
+};
+
+export type Referrals = {
+  links: number; // people who took the pledge and got a link
+  signedUp: number; // signed in through someone's link
+  shipped: number;
+  approved: number;
 };
 
 export async function funnel(): Promise<Funnel> {
@@ -73,7 +76,7 @@ export async function funnel(): Promise<Funnel> {
 }
 
 export async function overview(): Promise<Overview> {
-  const [[u], [s], [l], [o], badges, rewards] = await Promise.all([
+  const [[u], [s], badges] = await Promise.all([
     db
       .select({
         people: sql<number>`count(*)::int`,
@@ -92,28 +95,10 @@ export async function overview(): Promise<Overview> {
         reships: sql<number>`(count(*) filter (where ${ships.reshipOf} is not null))::int`,
         claimed: sql<number>`coalesce(sum(${ships.claimedSeconds}) filter (where ${ships.state} <> 'rejected'), 0)::bigint`,
         awarded: sql<number>`coalesce(sum(${ships.awardedSeconds}) filter (where ${ships.state} = 'approved'), 0)::bigint`,
-        medianBytes: sql<number | null>`percentile_cont(0.5) within group (order by ${ships.bytes})`,
-        minBytes: sql<number | null>`min(${ships.bytes})`,
-        maxBytes: sql<number | null>`max(${ships.bytes})`,
-        meanBytes: sql<number | null>`avg(${ships.bytes})`,
+        avgApproved: sql<number | null>`avg(${ships.awardedSeconds}) filter (where ${ships.state} = 'approved')`,
         reviewMedian: sql<number | null>`percentile_cont(0.5) within group (order by extract(epoch from (${ships.reviewedAt} - ${ships.createdAt})) / 60) filter (where ${ships.reviewedAt} is not null)`,
       })
       .from(ships),
-    db
-      .select({
-        minted: sql<number>`coalesce(sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.type} = 'award'), 0)::int`,
-        spent: sql<number>`coalesce(-sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.type} = 'order'), 0)::int`,
-        refunded: sql<number>`coalesce(sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.type} = 'refund'), 0)::int`,
-        adjusted: sql<number>`coalesce(sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.type} = 'adjustment'), 0)::int`,
-      })
-      .from(ledgerEntries),
-    db
-      .select({
-        placed: sql<number>`(count(*) filter (where ${orders.state} = 'placed'))::int`,
-        fulfilled: sql<number>`(count(*) filter (where ${orders.state} = 'fulfilled'))::int`,
-        rejected: sql<number>`(count(*) filter (where ${orders.state} = 'rejected'))::int`,
-      })
-      .from(orders),
     db.execute(sql`
       select slug,
              count(*) filter (where kind = 'claimed')::int as claimed,
@@ -126,13 +111,6 @@ export async function overview(): Promise<Overview> {
       group by slug
       order by awarded desc, claimed desc
     `) as Promise<{ slug: string; claimed: number; awarded: number }[]>,
-    db
-      .select({ name: orders.rewardName, count: sql<number>`count(*)::int` })
-      .from(orders)
-      .where(sql`${orders.state} <> 'rejected'`)
-      .groupBy(orders.rewardName)
-      .orderBy(sql`count(*) desc`)
-      .limit(8),
   ]);
   return {
     people: u?.people ?? 0,
@@ -147,17 +125,12 @@ export async function overview(): Promise<Overview> {
       rejected: s?.rejected ?? 0,
       reships: s?.reships ?? 0,
     },
-    seconds: { claimed: Number(s?.claimed ?? 0), awarded: Number(s?.awarded ?? 0) },
-    bytes: {
-      median: Math.round(Number(s?.medianBytes ?? 0)),
-      min: Number(s?.minBytes ?? 0),
-      max: Number(s?.maxBytes ?? 0),
-      mean: Math.round(Number(s?.meanBytes ?? 0)),
+    seconds: {
+      claimed: Number(s?.claimed ?? 0),
+      awarded: Number(s?.awarded ?? 0),
+      avgApproved: s?.avgApproved == null ? null : Number(s.avgApproved),
     },
-    bites: { minted: l?.minted ?? 0, spent: l?.spent ?? 0, refunded: l?.refunded ?? 0, adjusted: l?.adjusted ?? 0 },
-    orders: { placed: o?.placed ?? 0, fulfilled: o?.fulfilled ?? 0, rejected: o?.rejected ?? 0 },
     badges: badges.map((b) => ({ slug: b.slug, claimed: Number(b.claimed), awarded: Number(b.awarded) })),
-    rewards: rewards.map((r) => ({ name: r.name, count: r.count })),
     reviewMedianMinutes: s?.reviewMedian == null ? null : Math.round(Number(s.reviewMedian)),
   };
 }
@@ -203,16 +176,18 @@ export async function dailyCounts(days: string[]): Promise<DayCounts[]> {
   }));
 }
 
-// Ship sizes in 256-byte buckets up to the 3 KB cap.
-export async function byteHistogram(): Promise<{ label: string; count: number }[]> {
-  const rows = (await db.execute(sql`
-    select least(floor(${ships.bytes} / 256), 11)::int as bucket, count(*)::int as n
-    from ${ships} where ${ships.state} <> 'rejected'
-    group by 1 order by 1
-  `)) as { bucket: number; n: number }[];
-  const by = new Map(rows.map((r) => [Number(r.bucket), Number(r.n)]));
-  return Array.from({ length: 12 }, (_, i) => ({
-    label: i === 11 ? "2.75k+" : `${((i * 256) / 1024).toFixed(2).replace(/\.?0+$/, "")}k`,
-    count: by.get(i) ?? 0,
-  }));
+export async function referrals(): Promise<Referrals> {
+  const [row] = (await db.execute(sql`
+    select
+      (select count(*) from ${users} where ${users.referralCode} is not null)::int as links,
+      (select count(*) from ${users} where ${users.referredById} is not null and ${users.hcaSubject} is not null)::int as signed_up,
+      (select count(distinct s.user_id) from ${ships} s join ${users} r on r.id = s.user_id where r.referred_by_id is not null)::int as shipped,
+      (select count(distinct s.user_id) from ${ships} s join ${users} r on r.id = s.user_id where r.referred_by_id is not null and s.state = 'approved')::int as approved
+  `)) as { links: number; signed_up: number; shipped: number; approved: number }[];
+  return {
+    links: Number(row?.links ?? 0),
+    signedUp: Number(row?.signed_up ?? 0),
+    shipped: Number(row?.shipped ?? 0),
+    approved: Number(row?.approved ?? 0),
+  };
 }

@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { after } from "next/server";
 
-import { BADGE_BY_SLUG, MAX_URI_BYTES, PROGRAM_END, PROGRAM_START, hm } from "@/lib/program";
+import { BADGE_BY_SLUG, PROGRAM_END, PROGRAM_START, hm } from "@/lib/program";
 import { activityTotals, dailyActivity, daysToRefresh, lastRefreshedAt, programDays, refreshActivity } from "@/lib/server/activity";
 import { currentUser } from "@/lib/server/auth/session";
-import { byteHistogram, dailyCounts, funnel, overview } from "@/lib/server/stats";
+import { dailyCounts, funnel, overview, referrals } from "@/lib/server/stats";
 import { TZ } from "@/lib/tz";
 
-import { DauChart, FlowChart, Funnel, Glow, HoursChart, SizeChart } from "./Charts";
+import { DauChart, FlowChart, Funnel, Glow, HoursChart } from "./Charts";
 import Refresh from "./Refresh";
 
 export const dynamic = "force-dynamic";
@@ -39,13 +39,13 @@ export default async function StatsPage() {
   const stale = daysToRefresh(last);
   if (stale.length) after(() => refreshActivity(stale).catch((e) => console.error("[activity] refresh failed", e)));
 
-  const [f, o, act, dau, flow, sizes] = await Promise.all([
+  const [f, o, act, dau, flow, r] = await Promise.all([
     funnel(),
     overview(),
     activityTotals(days),
     dailyActivity(days),
     dailyCounts(days),
-    byteHistogram(),
+    referrals(),
   ]);
 
   const steps = [
@@ -71,8 +71,12 @@ export default async function StatsPage() {
     { k: "building today", v: n(today?.shrink ?? 0), sub: `${n(today?.coding ?? 0)} on Hackatime at all` },
     { k: "hours on SHRINK", v: (act.shrinkSeconds / 3600).toFixed(1), sub: `of ${(act.codingSeconds / 3600).toFixed(1)}h on Hackatime` },
     { k: "ships", v: n(o.ships.total), sub: `${n(o.ships.approved)} approved · ${n(o.ships.pending)} waiting` },
-    { k: "BITES minted", v: n(o.bites.minted), sub: `${n(o.bites.spent)} spent in the shop` },
-    { k: "median size", v: o.bytes.median ? `${n(o.bytes.median)}B` : "—", sub: `cap is ${n(MAX_URI_BYTES)} bytes` },
+    {
+      k: "hours approved",
+      v: (o.seconds.awarded / 3600).toFixed(1),
+      sub: o.seconds.avgApproved == null ? "none approved yet" : `${hm(o.seconds.avgApproved)} per approved ship`,
+    },
+    { k: "invited", v: n(r.signedUp), sub: `${n(r.shipped)} of them shipped` },
   ];
 
   return (
@@ -171,8 +175,9 @@ export default async function StatsPage() {
             <FlowChart data={flowData} />
             <Facts
               items={[
-                ["hours claimed on ships", hm(o.seconds.claimed)],
-                ["hours awarded", hm(o.seconds.awarded)],
+                ["hours on ships", hm(o.seconds.claimed)],
+                ["avg per approved ship", o.seconds.avgApproved == null ? "—" : hm(o.seconds.avgApproved)],
+                ["approval rate", pct(o.ships.approved, o.ships.approved + o.ships.rejected)],
                 ["median time to review", o.reviewMedianMinutes == null ? "—" : hm(o.reviewMedianMinutes * 60)],
                 ["re-ships", n(o.ships.reships)],
               ]}
@@ -180,14 +185,23 @@ export default async function StatsPage() {
           </Section>
         </div>
 
-        <div className="grid gap-[clamp(2rem,4vw,64px)] lg:grid-cols-3">
-          <Section title="ship sizes" sub={`Bytes per ship, up to the ${n(MAX_URI_BYTES)} cap.`}>
-            <SizeChart data={sizes} />
+        <div className="grid gap-[clamp(2rem,4vw,64px)] lg:grid-cols-2">
+          <Section title="referrals" sub="People who signed up through a friend's invite link, and whether they shipped.">
+            <Table
+              head={["", "people"]}
+              rows={[
+                ["got an invite link", n(r.links)],
+                ["signed up through one", n(r.signedUp)],
+                ["shipped", n(r.shipped)],
+                ["approved", n(r.approved)],
+              ]}
+              empty=""
+            />
             <Facts
               items={[
-                ["smallest", o.bytes.min ? `${n(o.bytes.min)}B` : "—"],
-                ["largest", o.bytes.max ? `${n(o.bytes.max)}B` : "—"],
-                ["mean", o.bytes.mean ? `${n(o.bytes.mean)}B` : "—"],
+                ["share of all sign-ups", pct(r.signedUp, o.signedUp)],
+                ["invited who ship", pct(r.shipped, r.signedUp)],
+                ["everyone who ships", pct(f.shipped, o.signedUp)],
               ]}
             />
           </Section>
@@ -196,20 +210,6 @@ export default async function StatsPage() {
               head={["badge", "claimed", "awarded"]}
               rows={o.badges.map((b) => [BADGE_BY_SLUG.get(b.slug)?.title ?? b.slug, n(b.claimed), n(b.awarded)])}
               empty="No badges claimed yet."
-            />
-          </Section>
-          <Section title="shop" sub="Where BITES go.">
-            <Table
-              head={["reward", "orders"]}
-              rows={o.rewards.map((r) => [r.name, n(r.count)])}
-              empty="Nothing ordered yet."
-            />
-            <Facts
-              items={[
-                ["orders open", n(o.orders.placed)],
-                ["fulfilled", n(o.orders.fulfilled)],
-                ["BITES refunded", n(o.bites.refunded)],
-              ]}
             />
           </Section>
         </div>
