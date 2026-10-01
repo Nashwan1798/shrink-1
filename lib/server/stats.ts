@@ -171,7 +171,7 @@ export async function dailyCounts(days: string[]): Promise<DayCounts[]> {
   if (days.length === 0) return [];
   const from = dayStart(days[0]).toISOString();
   const to = dayEnd(days[days.length - 1]).toISOString();
-  const dayOf = (col: unknown) => sql<string>`to_char(${col} at time zone ${TZ}, 'YYYY-MM-DD')`;
+  const dayOf = (col: unknown) => sql<string>`to_char(${col} at time zone ${sql.raw(`'${TZ}'`)}, 'YYYY-MM-DD')`;
   const [signups, onboarded, shipped, approved] = await Promise.all([
     db
       .select({ day: dayOf(users.createdAt), n: sql<number>`count(*)::int` })
