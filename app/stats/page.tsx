@@ -49,7 +49,6 @@ export default async function StatsPage() {
   ]);
 
   const steps = [
-    { label: "saw the post", value: f.postViews, color: "grey" as const },
     { label: "visited", value: f.visitors, color: "grey" as const },
     { label: "signed up", value: f.signedUp, color: "blue" as const },
     { label: "linked Hackatime", value: f.linked, color: "blue" as const },
@@ -139,7 +138,7 @@ export default async function StatsPage() {
         </section>
 
         {/* funnel */}
-        <Section title="funnel" sub="Post → visit → sign up → link Hackatime → building → shipped → approved.">
+        <Section title="funnel" sub="Visit → sign up → link Hackatime → building → shipped → approved.">
           <Funnel steps={steps} />
         </Section>
 

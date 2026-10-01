@@ -6,19 +6,16 @@ import { TZ, dayEnd, dayStart } from "@/lib/tz";
 
 import { db } from "./db/client";
 import { hackatimeDays, ledgerEntries, orders, ships, users } from "./db/schema";
+import { siteVisitors } from "./vercel-analytics";
 
 // Everything here is aggregate: the stats page is public, so nothing in this
 // module may return a name, email, Slack ID or anything else about one person.
 
-// Top of the funnel lives outside this database: the YSWS post and site
-// analytics. Override with STATS_POST_VIEWS / STATS_VISITORS when they move.
-export const FUNNEL_TOP = {
-  postViews: Number(process.env.STATS_POST_VIEWS) || 310,
-  visitors: Number(process.env.STATS_VISITORS) || 540,
-};
+// Top of the funnel comes from Vercel Web Analytics; STATS_VISITORS is the
+// number shown until that's configured (or when Vercel can't be reached).
+const VISITORS_FALLBACK = Number(process.env.STATS_VISITORS) || 540;
 
 export type Funnel = {
-  postViews: number;
   visitors: number;
   signedUp: number; // every user row, including Slack "join" placeholders
   linked: number; // linked a Hackatime account
@@ -45,7 +42,8 @@ export type Overview = {
 };
 
 export async function funnel(): Promise<Funnel> {
-  const [[u], [a], [s]] = await Promise.all([
+  const [visitors, [u], [a], [s]] = await Promise.all([
+    siteVisitors(),
     db
       .select({
         signedUp: sql<number>`count(*)::int`,
@@ -64,7 +62,7 @@ export async function funnel(): Promise<Funnel> {
       .from(ships),
   ]);
   return {
-    ...FUNNEL_TOP,
+    visitors: visitors ?? VISITORS_FALLBACK,
     signedUp: u?.signedUp ?? 0,
     linked: u?.linked ?? 0,
     onboarded: u?.onboarded ?? 0,

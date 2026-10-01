@@ -43,6 +43,10 @@ export const env = {
   AIRTABLE_SHIPS_TABLE: process.env.AIRTABLE_SHIPS_TABLE ?? "Ships",
   AIRTABLE_ORDERS_TABLE: process.env.AIRTABLE_ORDERS_TABLE ?? "Orders",
   AIRTABLE_YSWS_TABLE: process.env.AIRTABLE_YSWS_TABLE ?? "YSWS Project Submission",
+  // Vercel Web Analytics, for the visitor count on /stats.
+  VERCEL_TOKEN: process.env.VERCEL_TOKEN ?? "",
+  VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID ?? "",
+  VERCEL_TEAM_ID: process.env.VERCEL_TEAM_ID ?? "",
   CRON_SECRET: process.env.CRON_SECRET ?? "",
   // Shared secret for POST /api/slack/join (the Slack "join" button's webhook).
   SLACK_JOIN_SECRET: process.env.SLACK_JOIN_SECRET ?? "",
