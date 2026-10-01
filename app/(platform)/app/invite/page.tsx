@@ -6,7 +6,8 @@ import { referralsOf, type Referred } from "@/lib/server/referrals";
 
 import CopyLink from "./CopyLink";
 import Pledge from "./Pledge";
-import { BITE_LABEL, REFERRAL_RULES } from "./rules";
+import Rules from "./RuleList";
+import { BITE_LABEL } from "./rules";
 
 const STATUS: Record<Referred["status"], { label: string; className: string }> = {
   joined: { label: "signed up", className: "pill-pending" },
@@ -14,28 +15,6 @@ const STATUS: Record<Referred["status"], { label: string; className: string }> =
   paid: { label: `+${BITE_LABEL}`, className: "pill-approved" },
   void: { label: "shipped, no payout", className: "pill-rejected" },
 };
-
-function Rules({ compact = false }: { compact?: boolean }) {
-  return (
-    <ol className={`flex flex-col ${compact ? "gap-3" : "gap-4"}`}>
-      {REFERRAL_RULES.map((r, i) => (
-        <li key={r.t} className="flex gap-3">
-          <span
-            className={`grid size-7 shrink-0 place-content-center rounded-[5px] font-pixel text-[0.95rem] leading-none ${
-              i === 3 ? "bg-ink text-accent" : "bg-accent"
-            }`}
-          >
-            {i + 1}
-          </span>
-          <span>
-            <span className="block font-semibold tracking-tight">{r.t}</span>
-            <span className="block text-sm font-medium leading-snug text-black/60">{r.d}</span>
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
 
 export default async function Invite() {
   const user = await requireUser("/app/invite");

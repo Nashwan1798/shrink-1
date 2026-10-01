@@ -14,6 +14,7 @@ import { EXAMPLES } from "@/lib/examples";
 import ProjectCard from "@/app/components/ProjectCard";
 
 import CopyLink from "./invite/CopyLink";
+import GetLink from "./invite/GetLink";
 import { BITE_LABEL } from "./invite/rules";
 
 function daysUntil(date: string): number {
@@ -166,29 +167,26 @@ export default async function Home() {
 
       {!user.referralRevokedAt && (
         <section className={`${todo.length > 0 || ships.length > 0 ? "mt-[clamp(1.5rem,3vw,56px)] " : ""}border-t-4 border-rule pt-4`}>
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 className="text-[1.25rem] font-semibold tracking-tight">invite friends</h2>
-            <Link
-              href="/app/invite"
-              className="text-sm font-semibold underline decoration-1 underline-offset-[0.25em] hover:decoration-2"
-            >
-              {referrals ? "who's joined →" : "read the rules →"}
-            </Link>
-          </div>
+          <h2 className="text-[1.25rem] font-semibold tracking-tight">invite friends</h2>
+          <p className="mt-1 max-w-[60ch] font-medium leading-snug text-black/60">
+            get {BITE_LABEL} for each friend you&apos;ve invited to SHRINK! only if they&apos;ve shipped a project :p
+          </p>
           {referrals ? (
             <div className="mt-3 grid grid-cols-1 items-center gap-x-[clamp(1.5rem,3vw,56px)] gap-y-3 md:grid-cols-[minmax(0,1fr)_auto]">
               <CopyLink url={`${origin}/r/${user.referralCode}`} className="max-w-[560px]" />
               <p className="text-sm font-medium text-black/60">
                 <span className="font-pixel text-[1.1rem] text-black">{referrals.people.length}</span> signed up ·{" "}
                 <span className="font-pixel text-[1.1rem] text-black">{referrals.people.filter((p) => p.status !== "joined").length}</span>{" "}
-                shipped · <span className="font-pixel text-[1.1rem] text-black">{referrals.earned}</span> BITES earned
+                shipped · <span className="font-pixel text-[1.1rem] text-black">{referrals.earned}</span> BITES earned ·{" "}
+                <Link href="/app/invite" className="font-semibold text-black underline decoration-1 underline-offset-[0.25em] hover:decoration-2">
+                  who&apos;s joined →
+                </Link>
               </p>
             </div>
           ) : (
-            <p className="mt-2 max-w-[60ch] font-medium leading-snug text-black/60">
-              get {BITE_LABEL} for each friend who&apos;s new to SHRINK, signs up with your link, and gets a ship approved. people you know
-              only, never Slack channels.
-            </p>
+            <div className="mt-3">
+              <GetLink />
+            </div>
           )}
         </section>
       )}
