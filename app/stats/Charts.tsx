@@ -131,37 +131,39 @@ export function Glow({ color = "orange", className = "" }: { color?: DitherColor
 
 export type FunnelStep = { label: string; value: number; color: DitherColor };
 
-// A centred funnel: each step is a trapezoid from this step's width down to the
-// next one's, so the shape narrows as people drop off. Widths get a floor so
-// the small end stays visible next to hundreds at the top.
+// A horizontal funnel, left to right, drawn to scale: each step's height is
+// its share of the top step, and a step of zero is a hairline, not a bar. Each
+// segment tapers from this step's height to the next one's so the drop-off is
+// the shape itself. Numbers and conversion from the previous step sit above.
 export function Funnel({ steps }: { steps: FunnelStep[] }) {
   const top = Math.max(1, ...steps.map((s) => s.value));
-  const width = (v: number) => Math.max(6, (v / top) * 100);
+  const height = (v: number) => (v / top) * 100;
   return (
-    <ol className="flex flex-col">
+    <ol className="grid gap-x-1" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
       {steps.map((s, i) => {
         const prev = steps[i - 1];
         const next = steps[i + 1];
-        const w0 = width(s.value);
-        const w1 = next ? width(next.value) : Math.max(4, w0 * 0.85);
-        const l0 = (100 - w0) / 2;
-        const l1 = (100 - w1) / 2;
-        const clip = `polygon(${l0}% 0, ${100 - l0}% 0, ${100 - l1}% 100%, ${l1}% 100%)`;
-        const drop = prev && prev.value > 0 ? Math.round((s.value / prev.value) * 100) : null;
+        const h0 = height(s.value);
+        const h1 = next ? height(next.value) : h0;
+        const t0 = (100 - h0) / 2;
+        const t1 = (100 - h1) / 2;
+        const clip = `polygon(0 ${t0}%, 100% ${t1}%, 100% ${100 - t1}%, 0 ${100 - t0}%)`;
+        const ratio = prev && prev.value > 0 ? s.value / prev.value : null;
+        const drop = ratio == null ? "\u00a0" : ratio > 0 && ratio < 0.005 ? "<1% of prev" : `${Math.round(ratio * 100)}% of prev`;
         return (
-          <li key={s.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-stretch gap-x-5 sm:grid-cols-[11rem_minmax(0,1fr)_4.5rem_4rem]">
-            <div className="flex flex-col justify-center py-2 sm:py-0">
-              <span className="text-[0.95rem] font-semibold tracking-tight">{s.label}</span>
-              <span className="font-pixel text-xl leading-none tabular-nums text-white/90 sm:hidden">{s.value.toLocaleString()}</span>
+          <li key={s.label} className="flex min-w-0 flex-col gap-2">
+            <div className="flex min-w-0 flex-col">
+              <span className="font-pixel text-[clamp(1.1rem,2.4vw,1.75rem)] leading-none tabular-nums text-white">{s.value.toLocaleString()}</span>
+              <span className="mt-1 truncate text-[0.8rem] font-semibold tracking-tight sm:text-[0.9rem]">{s.label}</span>
+              <span className="font-mono text-[0.65rem] text-white/45 sm:text-xs">{drop}</span>
             </div>
-            <div className="relative col-span-2 h-14 sm:col-span-1" style={{ clipPath: clip }} aria-hidden>
-              <DitherGradient from={s.color} to="transparent" direction="down" cell={3} opacity={0.95} />
-              <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: "rgba(255,255,255,0.22)" }} />
+            <div className="relative h-32 sm:h-44" aria-hidden>
+              {/* hairline centre so a zero step still shows where the funnel goes */}
+              <div className="absolute inset-x-0 top-1/2 h-px bg-white/15" />
+              <div className="absolute inset-0" style={{ clipPath: clip }}>
+                <DitherGradient from={s.color} to="transparent" direction="right" cell={3} opacity={0.95} />
+              </div>
             </div>
-            <span className="hidden self-center justify-self-end font-pixel text-2xl leading-none tabular-nums sm:block">
-              {s.value.toLocaleString()}
-            </span>
-            <span className="hidden self-center justify-self-end font-mono text-xs text-white/45 sm:block">{drop == null ? "" : `${drop}%`}</span>
           </li>
         );
       })}
