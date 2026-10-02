@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { after } from "next/server";
 
-import { BADGE_BY_SLUG, PROGRAM_END, PROGRAM_START, hm } from "@/lib/program";
+import { BADGE_BY_SLUG, hm } from "@/lib/program";
 import { activityTotals, dailyActivity, daysToRefresh, lastRefreshedAt, programDays, refreshActivity } from "@/lib/server/activity";
 import { currentUser } from "@/lib/server/auth/session";
 import { dailyCounts, funnel, overview, referrals } from "@/lib/server/stats";
@@ -23,8 +23,6 @@ const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` :
 // Day strings are calendar dates, so UTC noon renders the same date everywhere.
 const dayLabel = (day: string) =>
   new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-const fmtDate = (s: string) =>
-  new Date(`${s}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
 const stamp = (d: Date) =>
   d.toLocaleString("en-US", { timeZone: TZ, month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
 
@@ -101,9 +99,6 @@ export default async function StatsPage() {
           SHRINK
         </Link>
         <span className="font-pixel text-[1.05rem] text-accent">stats</span>
-        <span className="hidden font-mono text-xs text-white/45 sm:inline">
-          {fmtDate(PROGRAM_START)} → {fmtDate(PROGRAM_END)} · Vermont time
-        </span>
         <nav className="ml-auto flex items-center gap-4 text-[0.95rem] font-medium text-white/60">
           <Link href="/app" className="hover:text-white">
             {user ? "back to the app" : "sign in"}
