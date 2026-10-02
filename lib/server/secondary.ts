@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 
 import { db } from "./db/client";
 import { ships, type Ship } from "./db/schema";
@@ -132,10 +132,11 @@ async function list(state: Remote["state"]): Promise<Remote[]> {
 export async function sync(origin: string) {
   if (!secondaryEnabled()) return { skipped: "SECONDARY_CHECK_KEY isn't set" };
 
+  // Includes ships approved before the check existed; new ones are sent when shipped.
   const unsent = await db
     .select({ id: ships.id })
     .from(ships)
-    .where(and(eq(ships.state, "pending"), isNull(ships.secondaryId)));
+    .where(and(ne(ships.state, "rejected"), isNull(ships.secondaryId)));
   let sent = 0;
   for (const s of unsent) if (await submit(s.id)) sent++;
 
