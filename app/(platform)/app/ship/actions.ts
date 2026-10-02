@@ -8,6 +8,7 @@ import { queueSync } from "@/lib/server/airtable";
 import { actionUser } from "@/lib/server/auth/current";
 import { loadShipAndAuthor, shipShipped } from "@/lib/server/effects";
 import { requestOrigin } from "@/lib/server/origin";
+import { submit } from "@/lib/server/secondary";
 import type { Check } from "@/lib/scan";
 import { hm } from "@/lib/program";
 import { deepScan, forgetSource, quickScan, repoKey, type ScanInput } from "@/lib/server/scan";
@@ -45,6 +46,7 @@ export async function shipAction(_prev: ShipFormState, form: FormData): Promise<
   after(async () => {
     const row = await loadShipAndAuthor(id);
     if (row) await shipShipped(row.ship, row.author, origin);
+    await submit(id).catch((e) => console.error("[secondary] submit threw", e));
   });
   queueSync({ ships: [id] });
   revalidatePath("/", "layout");

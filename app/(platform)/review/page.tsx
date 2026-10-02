@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AppFrame, ByteMeter, Empty, H1, Hours, Notice, StatePill, when } from "@/app/components/ui/bits";
 import { BADGE_BY_SLUG, capFor } from "@/lib/program";
 import type { Check } from "@/lib/scan";
+import type { Ship } from "@/lib/server/db/schema";
 import { requireRole } from "@/lib/server/auth/current";
 import { fetchProjects } from "@/lib/server/hackatime";
 import { reviewQueue } from "@/lib/server/ships";
@@ -17,7 +18,7 @@ export default async function ReviewPage({
   const reviewer = await requireRole("reviewer", "/review");
   const { s, tab, decided } = await searchParams;
   const showDone = tab === "done";
-  const queue = await reviewQueue(showDone ? ["approved", "rejected"] : ["pending"]);
+  const queue = await reviewQueue(showDone ? "done" : "queue");
   if (showDone) queue.reverse();
 
   const current = queue.find((q) => q.ship.id === s) ?? (showDone ? null : queue[0]) ?? null;
@@ -50,7 +51,9 @@ export default async function ReviewPage({
 
       {decided && (
         <div className="mb-5">
-          <Notice kind="ok">Decided. The author gets a DM.</Notice>
+          <Notice kind="ok">
+            {decided === "held" ? "Approved. It lands (BITES and DM) once the secondary check passes." : "Decided. The author gets a DM."}
+          </Notice>
         </div>
       )}
 
@@ -72,7 +75,7 @@ export default async function ReviewPage({
                   </span>
                   <span className="muted mt-0.5 flex items-center justify-between gap-2 text-sm font-medium">
                     <span className="truncate">{q.author.displayName}</span>
-                    <span>{showDone ? <StatePill state={q.ship.state} /> : <Hours seconds={q.ship.claimedSeconds} />}</span>
+                    <span>{showDone ? <ShipPill ship={q.ship} /> : <Hours seconds={q.ship.claimedSeconds} />}</span>
                   </span>
                 </Link>
               </li>
@@ -90,7 +93,7 @@ export default async function ReviewPage({
                       {current.ship.reshipOf && " · re-ship"}
                     </p>
                   </div>
-                  <StatePill state={current.ship.state} />
+                  <ShipPill ship={current.ship} />
                 </div>
                 <div className="card overflow-hidden">
                   <div className="aspect-[4/3] bg-ink">
@@ -171,7 +174,27 @@ export default async function ReviewPage({
 
                 {current.ship.scan && <ScanSummary checks={current.ship.scan} />}
 
-                {current.ship.state === "pending" ? (
+                <SecondarySummary ship={current.ship} />
+
+                {current.ship.verdict && current.ship.state === "pending" ? (
+                  <div className="card border-black bg-white px-4 py-3">
+                    <p className="label">approved · {when(new Date(current.ship.verdict.at))} · waiting on the secondary check</p>
+                    <p className="font-pixel text-[1.4rem]">
+                      +{current.ship.verdict.bites} BITES{" "}
+                      <span className="font-mono text-xs opacity-60">
+                        <Hours seconds={current.ship.verdict.awardedSeconds} /> · cap {capFor(current.ship.verdict.badges)} ·{" "}
+                        {current.ship.verdict.badges.map((b) => BADGE_BY_SLUG.get(b)?.title).join(", ") || "no badges"}
+                      </span>
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap font-medium">{current.ship.verdict.message}</p>
+                    {current.ship.verdict.internalNote && (
+                      <p className="mt-2 border-t border-current/20 pt-2 font-mono text-xs opacity-70">internal: {current.ship.verdict.internalNote}</p>
+                    )}
+                    <p className="mt-2 border-t border-current/20 pt-2 text-sm font-medium text-black/60">
+                      The author still sees it as in review. It lands once the check passes, or goes back to them if it doesn&apos;t.
+                    </p>
+                  </div>
+                ) : current.ship.state === "pending" ? (
                   <DecisionForm
                     key={current.ship.id}
                     shipId={current.ship.id}
@@ -206,6 +229,34 @@ export default async function ReviewPage({
         </div>
       )}
     </>
+  );
+}
+
+// "approved" here would be a lie until the held approval lands.
+function ShipPill({ ship }: { ship: Ship }) {
+  if (ship.state === "pending" && ship.verdict) return <span className="pill pill-pending">held</span>;
+  return <StatePill state={ship.state} />;
+}
+
+// Internal only: authors never see that a second check exists.
+function SecondarySummary({ ship }: { ship: Ship }) {
+  if (!ship.secondaryState) return null;
+  const label = { waiting: "waiting", passed: "passed", failed: "failed" }[ship.secondaryState];
+  return (
+    <div className={`rounded-[10px] border-2 px-4 py-3 ${ship.secondaryState === "failed" ? "border-[#c1121f] bg-white" : "border-panel-border bg-white"}`}>
+      <p className="label mb-1">secondary check</p>
+      <p className="text-sm font-semibold">
+        {label}
+        {ship.secondaryScore != null && <span className="font-mono"> · {ship.secondaryScore}/10</span>}
+        {ship.secondarySeconds != null && (
+          <span className="font-medium text-black/60">
+            {" "}
+            · credits <Hours seconds={ship.secondarySeconds} />
+          </span>
+        )}
+      </p>
+      {ship.secondaryNote && <p className="mt-1 whitespace-pre-wrap text-sm font-medium text-black/60">{ship.secondaryNote}</p>}
+    </div>
   );
 }
 

@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/hackatime",
       "schedule": "30 * * * *"
+    },
+    {
+      "path": "/api/cron/secondary",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

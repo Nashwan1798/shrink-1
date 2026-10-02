@@ -1,12 +1,13 @@
 import "server-only";
 
-import { and, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, ne, or } from "drizzle-orm";
 
 import { blocking } from "@/lib/scan";
 import { BADGE_BY_SLUG, MAX_URI_BYTES, MIN_SHIP_SECONDS, REPO_URL, bitesFor, byteLength } from "@/lib/program";
 
-import { db } from "./db/client";
-import { ships, users, type Ship, type User } from "./db/schema";
+import { db, type Tx } from "./db/client";
+import { ships, users, type Ship, type User, type Verdict } from "./db/schema";
+import { env } from "./env";
 import { fetchSeconds } from "./hackatime";
 import { fullScan } from "./scan";
 import * as ledger from "./ledger";
@@ -104,7 +105,14 @@ export type Decision =
   | { kind: "approve"; awardedHours: number; badges: string[]; message: string; internalNote: string }
   | { kind: "reject"; message: string; internalNote: string };
 
-// The state guard in each WHERE stops a stale tab re-deciding; the ledger key stops a double award.
+// What the author sees when the secondary check turns a ship down. They never hear there were two.
+const SECONDARY_MESSAGE = "This one didn't pass review, so it can't be approved. If you think that's a mistake, ask in #shrink.";
+
+const gateOpen = (ship: Ship) => !env.SECONDARY_CHECK_KEY || ship.secondaryState === "passed";
+
+// A reject lands at once. An approve is held as the ship's verdict and only lands
+// (BITES, DM, Airtable) once the secondary check has passed too; see settle().
+// The guards in each WHERE stop a stale tab re-deciding; the ledger key stops a double award.
 export async function decide(reviewer: User, shipId: string, decision: Decision): Promise<Ship> {
   const message = decision.message.trim();
   if (!message) throw new ShipError("Write a message to the author.");
@@ -113,7 +121,7 @@ export async function decide(reviewer: User, shipId: string, decision: Decision)
   return db.transaction(async (tx) => {
     const [ship] = await tx.select().from(ships).where(eq(ships.id, shipId)).for("update").limit(1);
     if (!ship) throw new ShipError("That ship doesn't exist.");
-    if (ship.state !== "pending") throw new ShipError("Someone already decided this one.");
+    if (ship.state !== "pending" || ship.verdict) throw new ShipError("Someone already decided this one.");
     if (ship.userId === reviewer.id && reviewer.role !== "admin") throw new ShipError("You can't review your own ship.");
 
     if (decision.kind === "reject") {
@@ -139,35 +147,83 @@ export async function decide(reviewer: User, shipId: string, decision: Decision)
       throw new ShipError(`Hackatime only shows ${(ship.claimedSeconds / 3600).toFixed(1)}h. You can't award more than that.`);
     }
     const badges = [...new Set(decision.badges)].filter((b) => BADGE_BY_SLUG.has(b));
-    const bites = bitesFor(Math.min(awardedSeconds, ship.claimedSeconds), badges);
+    const seconds = Math.min(awardedSeconds, ship.claimedSeconds);
+    const verdict: Verdict = {
+      reviewerId: reviewer.id,
+      at: new Date().toISOString(),
+      awardedSeconds: seconds,
+      badges,
+      bites: bitesFor(seconds, badges),
+      message,
+      internalNote: decision.internalNote.trim() || null,
+    };
 
-    const [updated] = await tx
+    const [held] = await tx
       .update(ships)
-      .set({
-        state: "approved",
-        reviewerId: reviewer.id,
-        reviewedAt: new Date(),
-        awardedSeconds: Math.min(awardedSeconds, ship.claimedSeconds),
-        awardedBadges: badges,
-        awardedBites: bites,
-        publicMessage: message,
-        internalNote: decision.internalNote.trim() || null,
-      })
-      .where(and(eq(ships.id, ship.id), eq(ships.state, "pending")))
+      .set({ verdict })
+      .where(and(eq(ships.id, ship.id), eq(ships.state, "pending"), isNull(ships.verdict)))
       .returning();
-    if (!updated) throw new ShipError("Someone already decided this one.");
+    if (!held) throw new ShipError("Someone already decided this one.");
+    return gateOpen(held) ? approve(tx, held, verdict) : held;
+  });
+}
 
-    await ledger.lockUser(ship.userId, tx);
-    await ledger.post(tx, {
-      userId: ship.userId,
-      amount: bites,
-      type: "award",
-      reason: ship.title,
-      idempotencyKey: `ship:${ship.id}:award`,
-      actorId: reviewer.id,
-    });
-    await payReferral(tx, ship.userId, reviewer.id);
-    return updated;
+async function approve(tx: Tx, ship: Ship, v: Verdict): Promise<Ship> {
+  const [updated] = await tx
+    .update(ships)
+    .set({
+      state: "approved",
+      reviewerId: v.reviewerId,
+      reviewedAt: new Date(),
+      awardedSeconds: v.awardedSeconds,
+      awardedBadges: v.badges,
+      awardedBites: v.bites,
+      publicMessage: v.message,
+      internalNote: v.internalNote,
+    })
+    .where(and(eq(ships.id, ship.id), eq(ships.state, "pending")))
+    .returning();
+  if (!updated) throw new ShipError("Someone already decided this one.");
+
+  await ledger.lockUser(ship.userId, tx);
+  await ledger.post(tx, {
+    userId: ship.userId,
+    amount: v.bites,
+    type: "award",
+    reason: ship.title,
+    idempotencyKey: `ship:${ship.id}:award`,
+    actorId: v.reviewerId,
+  });
+  await payReferral(tx, ship.userId, v.reviewerId);
+  return updated;
+}
+
+// Call after the secondary check's result changes. Lands a held approval once it
+// passed, or sends the ship back if it failed. Returns the ship only if this call
+// decided it, so the caller knows to DM and sync.
+export async function settle(shipId: string): Promise<Ship | null> {
+  return db.transaction(async (tx) => {
+    const [ship] = await tx.select().from(ships).where(eq(ships.id, shipId)).for("update").limit(1);
+    if (!ship || ship.state !== "pending") return null;
+
+    if (ship.secondaryState === "failed") {
+      const note = `secondary check ${ship.secondaryScore ?? "?"}/10${ship.secondaryNote ? `: ${ship.secondaryNote}` : ""}`;
+      const [updated] = await tx
+        .update(ships)
+        .set({
+          state: "rejected",
+          reviewerId: ship.verdict?.reviewerId ?? null,
+          reviewedAt: new Date(),
+          publicMessage: SECONDARY_MESSAGE,
+          internalNote: [note, ship.verdict?.internalNote].filter(Boolean).join("\n"),
+        })
+        .where(and(eq(ships.id, ship.id), eq(ships.state, "pending")))
+        .returning();
+      return updated ?? null;
+    }
+
+    if (ship.verdict && gateOpen(ship)) return approve(tx, ship, ship.verdict);
+    return null;
   });
 }
 
@@ -204,7 +260,9 @@ export async function showcase(limit = 9) {
     .limit(limit);
 }
 
-export async function reviewQueue(states: Ship["state"][] = ["pending"]): Promise<QueueItem[]> {
+// The queue is everything nobody has decided; done includes approvals still
+// waiting on the secondary check.
+export async function reviewQueue(tab: "queue" | "done" = "queue"): Promise<QueueItem[]> {
   const rows = await db
     .select({
       ship: ships,
@@ -219,7 +277,11 @@ export async function reviewQueue(states: Ship["state"][] = ["pending"]): Promis
     })
     .from(ships)
     .innerJoin(users, eq(ships.userId, users.id))
-    .where(inArray(ships.state, states))
+    .where(
+      tab === "queue"
+        ? and(eq(ships.state, "pending"), isNull(ships.verdict))
+        : or(ne(ships.state, "pending"), isNotNull(ships.verdict)),
+    )
     .orderBy(ships.createdAt);
   return rows;
 }

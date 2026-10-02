@@ -8,6 +8,7 @@ import { queueSync } from "@/lib/server/airtable";
 import { actionRole } from "@/lib/server/auth/current";
 import { loadShipAndAuthor, shipDecided } from "@/lib/server/effects";
 import { requestOrigin } from "@/lib/server/origin";
+import { refresh, report } from "@/lib/server/secondary";
 import { ShipError, decide } from "@/lib/server/ships";
 
 export type DecisionState = { error: string | null };
@@ -19,15 +20,17 @@ export async function decideAction(_prev: DecisionState, form: FormData): Promis
   const kind = str("kind");
   const nextId = str("next_id");
 
+  let held = false;
   try {
     if (kind === "approve") {
-      await decide(reviewer, shipId, {
+      const ship = await decide(reviewer, shipId, {
         kind: "approve",
         awardedHours: Number(str("hours")),
         badges: form.getAll("badge").map(String),
         message: str("message"),
         internalNote: str("internal_note"),
       });
+      held = ship.state === "pending";
     } else if (kind === "reject") {
       await decide(reviewer, shipId, { kind: "reject", message: str("message"), internalNote: str("internal_note") });
     } else {
@@ -41,10 +44,22 @@ export async function decideAction(_prev: DecisionState, form: FormData): Promis
 
   const origin = await requestOrigin();
   after(async () => {
-    const row = await loadShipAndAuthor(shipId);
-    if (row) await shipDecided(row.ship, row.author, origin);
+    try {
+      // A held approval may be able to land already, if the secondary check finished first.
+      if (held) {
+        if (await refresh(shipId, origin)) queueSync({ ships: [shipId] });
+        return;
+      }
+      const row = await loadShipAndAuthor(shipId);
+      if (!row) return;
+      await shipDecided(row.ship, row.author, origin);
+      await report(row.ship);
+    } catch (e) {
+      console.error("[review] after-decision effects failed", e);
+    }
   });
-  queueSync({ ships: [shipId] });
+  if (!held) queueSync({ ships: [shipId] });
   revalidatePath("/", "layout");
-  redirect(nextId ? `/review?s=${nextId}&decided=1` : "/review?decided=1");
+  const done = held ? "held" : "1";
+  redirect(nextId ? `/review?s=${nextId}&decided=${done}` : `/review?decided=${done}`);
 }

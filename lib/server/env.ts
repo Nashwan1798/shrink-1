@@ -48,6 +48,9 @@ export const env = {
   VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID ?? "",
   VERCEL_TEAM_ID: process.env.VERCEL_TEAM_ID ?? "",
   CRON_SECRET: process.env.CRON_SECRET ?? "",
+  // Secondary check on every ship. Empty key turns it off: approvals land straight away.
+  SECONDARY_CHECK_KEY: process.env.SECONDARY_CHECK_KEY ?? "",
+  SECONDARY_CHECK_URL: (process.env.SECONDARY_CHECK_URL ?? "https://telescreen.hackclub.com").replace(/\/$/, ""),
   // Shared secret for POST /api/slack/join (the Slack "join" button's webhook).
   SLACK_JOIN_SECRET: process.env.SLACK_JOIN_SECRET ?? "",
   // Public origin for links written to Airtable from the cron job.

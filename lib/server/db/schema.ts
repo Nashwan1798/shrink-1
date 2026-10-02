@@ -121,6 +121,16 @@ export const ships = pgTable(
     publicMessage: text("public_message"),
     // Never shown to the author.
     internalNote: text("internal_note"),
+    // A reviewer's approval, held until the secondary check passes. The ship stays
+    // pending (and the author sees one review) until both are in.
+    verdict: jsonb("verdict").$type<Verdict>(),
+    // The secondary check (lib/server/secondary.ts). Null state means not sent yet.
+    secondaryId: text("secondary_id"),
+    secondaryState: text("secondary_state").$type<"waiting" | "passed" | "failed">(),
+    secondaryScore: integer("secondary_score"),
+    secondaryNote: text("secondary_note"),
+    secondarySeconds: bigint("secondary_seconds", { mode: "number" }),
+    secondaryAt: timestamp("secondary_at", { withTimezone: true }),
     createdAt: now("created_at"),
   },
   (t) => [
@@ -251,6 +261,16 @@ export const hackatimeProjectHistory = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.project] })],
 );
+
+export type Verdict = {
+  reviewerId: string;
+  at: string;
+  awardedSeconds: number;
+  badges: string[];
+  bites: number;
+  message: string;
+  internalNote: string | null;
+};
 
 export type User = typeof users.$inferSelect;
 export type HackatimeDay = typeof hackatimeDays.$inferSelect;
