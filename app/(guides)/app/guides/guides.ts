@@ -25,7 +25,7 @@ export const GUIDES: Guide[] = [
   { slug: "setup", title: "setting up", group: "making it", Body: Setup },
   { slug: "writing", title: "writing the app", group: "making it", Body: Writing },
   { slug: "shrinking", title: "getting under 3kb", group: "making it", Body: Shrinking },
-  { slug: "shipping", title: "shipping it", group: "making it", soon: true, Body: Shipping },
+  { slug: "shipping", title: "shipping it", group: "making it", Body: Shipping },
   { slug: "canvas", title: "canvas", group: "badges", badge: "canvas", soon: true, Body: Canvas },
   { slug: "sound", title: "sound", group: "badges", badge: "audio", soon: true, Body: Sound },
   { slug: "input", title: "input", group: "badges", badge: "interactive", soon: true, Body: Input },

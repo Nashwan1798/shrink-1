@@ -3,67 +3,60 @@ import { BADGES, BADGE_BY_SLUG, BASE_CAP } from "@/lib/program";
 export const CANVAS = BADGE_BY_SLUG.get("canvas").bites;
 export const badgeRaises = BADGES.map((b, i) => (i === 0 ? "" : i === BADGES.length - 1 ? " and " : ", ") + b.title.replace(/[<>]/g, "") + " +" + b.bites).join("");
 
-## what gets checked
+## Checklist before you ship!
 
-When you ship, the site checks these first. If one fails, it tells you what to fix. The first two are done from the list on your [home page](/app).
+Make sure you've done all of these before you ship!
 
 1. you've verified your identity with Hack Club
-2. your Hack Club account has an address (prizes get mailed there)
+2. your Hack Club account has an address
 3. the Hackatime projects you pick on the ship form add up to at least 30 minutes
 4. the app doesn't load anything from the internet
 5. your repo is public (any git host works)
 6. the repo has a README that explains the app
-7. the readable code for the app is in the repo
+7. the readable code for the project is in the repo
 
-Then a reviewer tries your app, reads the README and the code, and decides on hours and badges.
+Then a reviewer tries your project, and reads the README and the code.
 
-## what goes in the repo
+## requirements in your repo
 
-- `src/index.html`. A repo with only the one-liner in it fails the code check.
+This isn't a strict requirement, however it's very much recommended to have these (or a varient of these) in your repo.
+
+- `src/index.html` The source file, this SHOULD NOT be one lined!
 - `build.mjs` and `package.json`
-- `dist/uri.txt`, so people can try the app without building it
+- `dist/uri.txt`, so people can try the project 
 - `README.md`
 
 ## the README
 
-Say what it is, how to use it, and one thing about how you made it. Short is fine, and write it yourself. AI-written READMEs all sound the same, and reviewers read a lot of them.
+Be clear on what your project is, it's EXTREMELY important for it to be human written! We know how an AI readme sounds like and we'll reject your project over it.
 
-You could lay it out like this, and change whatever you want:
+You could lay it out like this:
 
 ````README.md
-# name of your app
+# name of your project
 
-What it is, in a sentence or two.
+Explaion your project.
 
 ## how to use it
-The controls, or what to click first.
+
 
 ## how it works
-Something that was tricky, or a part you like.
 
 ## building
 ```
 npm install
 node build.mjs
 ```
-The data URI ends up in dist/uri.txt. It's ____ bytes.
 ````
 
-A screenshot or GIF of it running helps too. The 3kb limit is only for the app, so the repo can have anything in it.
+A screenshot or GIF of it would be nice too :D 
 
 ## badges
 
-On the ship form you tick the badges your app earned, and the reviewer checks them. Only tick the ones it really uses, and say in the README where. If it barely uses one, like a single beep, the reviewer will probably take that badge off.
 
 - [canvas](/app/guides/canvas): drawn with the Canvas API
 - [web audio](/app/guides/sound): makes sound with the Web Audio API
 - [interactive](/app/guides/input): responds to the keyboard, mouse or touch
 - [3D](/app/guides/3d): shows something in 3D
 
-## how BITES work
-
-BITES are what you spend in the [shop](/app/shop). You get 1 for every hour on Hackatime, but each ship has a cap. The cap starts at {BASE_CAP}, and each badge raises it: {badgeRaises}.
-
-So 10 hours with no badges gets you {BASE_CAP} BITES. 10 hours with the canvas badge (cap of {BASE_CAP + CANVAS}) gets you all 10. The reviewer can lower the hours if they don't match the work in the repo.
-
-> If your ship gets sent back, the reviewer's message says why. Fix it and ship again.
+Please be honest and only select those that you implamented in your project! Our reviewers will be strict on this.
