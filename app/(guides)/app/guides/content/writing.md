@@ -1,14 +1,14 @@
-## pick an idea that fits
+## what should you make?
 
-3kb is about 3,000 characters of minified code, which is enough for a whole game or instrument as long as it does one main thing. Menus and levels on top of that usually won't fit. One sentence test: if you can't say what it does in one, it's too big, and the extras can wait until the end when you know how much room is left.
+How large is 3kb? What can you even do with 3kb? 3kb is roughly 3000 characters. That's enough for a simple game or shader! One simple rule you can keep in mind: if you can't say what it does in one sentence, it's too big! My suggestion would be to build the basics first, and after finishing, look at how much space you have left to add other stuff.
 
-## write it long first
+## you don't have to compress everything in the very beginning!
 
-Give variables real names and write comments. The build shortens variable and function names and removes comments, so none of that counts against you. The one catch is property names, the part after a dot like `player.speed`, which stay exactly as you typed them. Keep those short-ish.
+Name your variables so you can understand them and write comments! The build script shortens variable and function names and removes comments anyways. The only thing it can't shorten is property names (the bit after the dot, like `player.speed`), so don't make those super long.
 
-## a starting file
+## how do i start?
 
-Most apps here keep some state (where the player is, the score), change it a little every frame in `update`, paint it in `draw`, and change it again when someone presses something. Here's an empty version. Paste it into `src/index.html` and a red square slides across the screen. The badge guides give you code to swap into it.
+Do it however you want! :p At the end of the daym it's just a HTML file. Here's an example project you can put into `src/index.html` if you don't know where to start. It's a red square sliding across the screen animation.
 
 ```src/index.html
 <body>
@@ -19,11 +19,11 @@ Most apps here keep some state (where the player is, the score), change it a lit
   <script>
     const ctx = c.getContext("2d");
 
-    // everything the app needs to remember goes up here
+    // variables for the entire app
     let player = { x: 100, y: 100 };
 
     function update(dt) {
-      // move 50 pixels per second, and wrap around at the edge
+      // move 50 pixels every second, and wrap around at the edge
       player.x = (player.x + 50 * dt) % c.width;
     }
 
@@ -52,29 +52,14 @@ Most apps here keep some state (where the player is, the score), change it a lit
 </body>
 ```
 
-A few things in there you might not have seen:
-
-- `c` is never declared. An element with `id="c"` automatically gets a variable called `c`.
-- `requestAnimationFrame(frame)` runs `frame` right before the browser next draws the screen, and `frame` asks for that again at the end. That's the loop, about 60 times a second.
-- `dt` is the seconds since the last frame, so `50 * dt` means "50 pixels per second". It moves the same speed on a 60Hz monitor as on a 144Hz one.
-- `time` is milliseconds since the page opened.
-
-Apps that are mostly buttons and text can skip the canvas and the loop.
-
 ## no libraries
 
-Nothing can be loaded from the internet (and libraries are too big anyway), so it's all plain JavaScript. `<input type=range>` gives you a slider, `<input type=color>` a color picker, and `contenteditable` makes any element typeable. Fonts like `monospace` and `sans-serif` are free.
+Nothing can load from the internet! Everything will have to all be local JavaScript. The browser gives you more than you'd think though! `<input type=range>` is a slider, `<input type=color>` is a color picker, `contenteditable` lets you type into anything, and fonts like `monospace` and `sans-serif`.
 
-## things that don't work
 
-- `localStorage` throws an error in a data URI, so scores can't be saved. If you use it, wrap it in `try`/`catch`.
-- Images, fonts and sounds from other sites are all blocked. Draw or generate what you need.
-- Emoji and accented letters need `<meta charset=utf-8>` at the top, or they turn into garbage.
+## need help?
 
-## where reviewers run it
+Ask in #shrink on Slack!
 
-Reviewers open your app in a frame on the SHRINK site. It's the same as the address bar except for two things. `alert()`, `confirm()` and `prompt()` are blocked, so show messages on the page. And the keyboard does nothing until someone clicks the app, which the [input guide](/app/guides/input) has a fix for.
-
-## stuck?
-
-Ask in #shrink on Slack. [MDN](https://developer.mozilla.org) documents everything these guides use, and [Dwitter](https://www.dwitter.net) and [js13k](https://js13kgames.com) are full of tricks for tiny code. Use code from these guides freely. Anything you find elsewhere, work out how it does what it does and then write your own version, since the reviewer does read your code and pasted code stands out.
+## Other resources 
+Check out [Dwitter](https://www.dwitter.net) and [js13k](https://js13kgames.com)! They're both a site full of projects under a specific size limit, One for graphics, and one for games.
